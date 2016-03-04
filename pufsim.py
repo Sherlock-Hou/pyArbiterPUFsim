@@ -4,7 +4,8 @@ from abc import ABCMeta, abstractmethod
 import itertools
 import random
 
-class RNDJesus(object):
+#base class for random time generation of a single multiplexer
+class RNDBase(object):
     
     __metaclass__ = ABCMeta
 
@@ -12,20 +13,23 @@ class RNDJesus(object):
     def generateTimes(self):
         pass
         
-#erbt von RNDJesus und implementiert eine Methode
-#generateTimes(self) gibt 4 float Werte als Tupel (Quadrupel?) zurück 
-#Reihenfolge der Werte: up_up, down_down, up_down, down_up)
-class RNDStuipdGeneator(RNDJesus):
+#Uniform distribution
+#generateTimes(self) returns 4 floats as tuple (Quadrupel?) 
+#Order of Values: up_up, down_down, up_down, down_up
+class RNDStuipdGeneator(RNDBase):
     
     def generateTimes(self):
         return (random.random(),random.random(),random.random(),random.random())
 
-
+#single multiplexer
 class multiplexer(object):
-        
+    
     def __init__(self, timeTuple):
         self.up_up, self.down_down, self.up_down, self.down_up = timeTuple
     
+    #methode recives already accumulated time and adds and switches the values
+    #according to the respectiv challenge bit 
+    #return: both times as tuple (up, down)
     def challenge(self, bit, time_up, time_down):
         if bit == 0:
             return (time_up + self.up_up), (time_down + self.down_down)
@@ -33,9 +37,11 @@ class multiplexer(object):
             return (time_down + self.down_up), (time_up + self.up_down)
         else:
             raise RuntimeError('Bit is not 0 or 1')
-
+#single puf
 class puf(object):
     
+    #needs an instance of RNDBase to create single Multiplexer and overall
+    #size (numer of Multiplexer) of the puf
     def __init__(self, gen, numOfMultip):
         self.gen = gen
         self.numOfMultip = numOfMultip
@@ -45,6 +51,8 @@ class puf(object):
             tmp = multiplexer(gen.generateTimes())
             self.multiplexerList.append(tmp)
     
+    #single challenge to the puf
+    #return: both times as tuple (up, down)
     def challenge(self, bitList):
         time_up = 0.0
         time_down = 0.0
@@ -61,23 +69,3 @@ class puf(object):
     def challengeSingle(self, bitList):
         time_up, time_down = self.challenge(bitList)
         print '{' + ', '.join(map(str, bitList)) + '}\t' + str(time_up - time_down)
-        
-    def challengeList(self, showDif):
-        if showDif > 1:
-            raise RuntimeError('Param has to be 0 or 1 (0 -> Bit view 1 -> TimeDif view')
-        
-        challengeList = map(list, itertools.product([0, 1], repeat=self.numOfMultip))
-        
-        for chal in challengeList:
-            time_up, time_down = self.challenge(chal)
-            time_dif = time_up - time_down
-            if showDif == 0:
-                if time_dif <= 0:
-                    print '{' + ', '.join(map(str, chal)) + '}\t' + '0'
-                else:
-                    print '{' + ', '.join(map(str, chal)) + '}\t' + '1'
-            else:
-                print '{' + ', '.join(map(str, chal)) + '}\t' + str(time_dif)
-            
-        
-
