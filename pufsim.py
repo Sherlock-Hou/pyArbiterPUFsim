@@ -30,7 +30,7 @@ class puf(object):
         self.numOfMultip = numOfMultip
         self.multiplexerList = []
         
-        for i in range(0, self.numOfMultip):
+        for i in xrange(0, self.numOfMultip):
             tmp = multiplexer(gen.generateTimes())
             self.multiplexerList.append(tmp)
 
@@ -53,9 +53,17 @@ class puf(object):
             runner += 1
         return (time_up, time_down)
         
+    #single challenge to puf
+    #prints nice string ...
     def challengeSingle(self, bitList):
         time_up, time_down = self.challenge(bitList)
         print '{' + ', '.join(map(str, bitList)) + '}\t' + str(time_up - time_down)
+        
+    #single challenge to the puf
+    #return: one bit result
+    def challengeBit(self, bitList):
+        time_up, time_down = self.challenge(bitList)
+        return 1 if ((time_up - time_down) > 0) else 0
 
 #base class for random time generation of a single multiplexer
 class RNDBase(object):
@@ -85,6 +93,7 @@ def genChallengeList(challengeSize, numOfChallenges):
         return map(list, itertools.product([0, 1], repeat=challengeSize))
     else :
         challengeList = []
+        tmp = []
         i = 0
         while (i < numOfChallenges):
             tmp = [random.randint(0,1) for b in range(0,challengeSize)]
@@ -94,4 +103,77 @@ def genChallengeList(challengeSize, numOfChallenges):
         return challengeList
     #asked for more Challenges then combinations possible
     raise RuntimeError('numOfChallenges > 2 ^ challengeSize')
+
+class pufEval(object):
+    
+    def __init__(self, numOfMultiplexer, RNDBaseInstance, numOfChallenges, MutatorBaseInstance, numOfPufs, numOfThreads):
         
+        #not nice, I know (refactor it ...)
+        if isinstance(numOfMultiplexer, ( int, long )):
+            self.numOfMultiplexer = numOfMultiplexer
+        else:
+            raise RuntimeError('1 Argument (numOfMultiplexer) is not an Int/Long')
+        
+        if isinstance(RNDBaseInstance, RNDBase):
+            self.RNDBaseInstance = RNDBaseInstance
+        else:
+            raise RuntimeError('2 Argument (RNDBaseInstance) is not of the Typ RNDBase')
+        
+        if isinstance(numOfChallenges, ( int, long )):
+            self.numOfChallenges = numOfChallenges
+        else:
+            raise RuntimeError('3 Argument (numOfChallenges) is not an Int/Long')
+
+        if isinstance(MutatorBaseInstance, MutatorBase):
+            self.MutatorBaseInstance = MutatorBaseInstance
+        else:
+            raise RuntimeError('4 Argument (MutatorBaseInstance) is not of the Typ MutatorBase')
+        
+        if isinstance( numOfPufs, ( int, long )):
+            self.numOfPufs = numOfPufs
+        else:
+            raise RuntimeError('5 Argument (numOfPufs) is not an Int/Long')
+        
+        if isinstance(numOfThreads, ( int, long )):
+            self.numOfThreads = numOfThreads
+        else:
+            raise RuntimeError('6 Argument (numOfThreads) is not an Int/Long')
+        
+        self.pufList = []
+        
+        for i in range(0, self.numOfPufs): 
+            self.pufList.append(puf(self.RNDBaseInstance, self.numOfMultiplexer))
+            
+    def run(self):
+        result = [[0 for x in xrange(self.numOfChallenges)] for x in xrange(self.numOfPufs)] 
+        challengeList = []
+        tmp = ()
+        for i in xrange(0, self.numOfPufs):
+            challengeList = genChallengeList(self.numOfMultiplexer, self.numOfChallenges)
+            for j in xrange(0, self.numOfChallenges):
+                tmp = (self.pufList[i].challengeBit(challengeList[j]), self.pufList[i].challengeBit(self.MutatorBaseInstance.mutateChallenge(challengeList[j], self.numOfMultiplexer)))
+                result[i][j] = tmp
+        """
+        for k in xrange(0, self.numOfPufs):
+            for l in xrange(0, self.numOfChallenges):
+                print result[k][l],
+            print
+        """
+        return result
+
+
+#base class for challenge mutation
+class MutatorBase(object):
+    
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def mutateChallenge(self, challenge, length):
+        pass
+        
+#last bit switch mutator
+class MutatorLastBitSwitch(MutatorBase):
+    
+    def mutateChallenge(self, challenge, length):
+        challenge[length-1] = challenge[length-1] ^ 1
+        return challenge
