@@ -92,5 +92,6 @@ def genChallengeList(challengeSize, numOfChallenges):
                 challengeList.append(tmp)
                 i += 1
         return challengeList
-        
+    #asked for more Challenges then combinations possible
+    raise RuntimeError('numOfChallenges > 2 ^ challengeSize')
         
