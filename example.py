@@ -1,4 +1,5 @@
 import pufsim
+import time
 
 #create random generator instance
 rndgen = pufsim.RNDUniform()
@@ -11,12 +12,18 @@ pufsimu.challengeSingle([1,1,1,1,1,1,0])
 pufsimu.challengeSingle([0,1,1,1,1,1,1])
 
 #worst case
-print len(pufsim.genChallengeList(10,((2**10)-1)))
+#print len(pufsim.genChallengeList(10,((2**10)-1)))
+
+
 
 mutatio = pufsim.MutatorLastBitSwitch()
 
-tryEval = pufsim.pufEval(8, rndgen, 2**8, mutatio, 1000, 4)
-print "done"
-print tryEval.run()
+startTime = time.time()
+
+tryEval = pufsim.pufEval(16, rndgen, 2**8, mutatio, 1000, 4)
+tryEval.run()
+
+endTime = time.time()
+print  endTime - startTime
 
 
