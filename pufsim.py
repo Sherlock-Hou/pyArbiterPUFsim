@@ -3,6 +3,7 @@
 from abc import ABCMeta, abstractmethod
 import itertools
 import random
+from multiprocessing import Process, Queue
 
 #single multiplexer
 class multiplexer(object):
@@ -139,28 +140,55 @@ class pufEval(object):
         else:
             raise RuntimeError('6 Argument (numOfThreads) is not an Int/Long')
         
+        #creating puf instances
         self.pufList = []
-        
-        for i in range(0, self.numOfPufs): 
+        for i in xrange(0, self.numOfPufs): 
             self.pufList.append(puf(self.RNDBaseInstance, self.numOfMultiplexer))
-            
+
     def run(self):
-        result = [[0 for x in xrange(self.numOfChallenges)] for x in xrange(self.numOfPufs)] 
-        challengeList = []
-        tmp = ()
-        for i in xrange(0, self.numOfPufs):
-            challengeList = genChallengeList(self.numOfMultiplexer, self.numOfChallenges)
-            for j in xrange(0, self.numOfChallenges):
-                tmp = (self.pufList[i].challengeBit(challengeList[j]), self.pufList[i].challengeBit(self.MutatorBaseInstance.mutateChallenge(challengeList[j], self.numOfMultiplexer)))
-                result[i][j] = tmp
-        """
+        #calculating list ranges for multi core processing
+        rest = self.numOfPufs % self.numOfThreads
+        pufListRanges = []
+        for j in xrange(0, self.numOfThreads):
+            pufListRanges.append([(j * ((self.numOfPufs - rest) / self.numOfThreads)), ((j + 1) * ((self.numOfPufs - rest) / self.numOfThreads))])
+        pufListRanges[self.numOfThreads - 1][1] = pufListRanges[self.numOfThreads - 1][1] + rest
+        
+        
+        qList = Queue()
+        pList = []
+        
+        for i in xrange(0, self.numOfThreads):
+            #self.run(self.pufList[pufListRanges[i][0] : (pufListRanges[i][1] -1)], (pufListRanges[i][1] - pufListRanges[i][0]),self.numOfChallenges, self.numOfMultiplexer, self.MutatorBaseInstance, qList)
+            pList.append( Process(target=runThread, args=(self.pufList[pufListRanges[i][0] : (pufListRanges[i][1])], (pufListRanges[i][1] - pufListRanges[i][0]),self.numOfChallenges, self.numOfMultiplexer, self.MutatorBaseInstance, qList)))
+            pList[i].start()
+
+        
+        result = []
+        for j in xrange(0, self.numOfThreads):
+            #set block=True to block until we get a result
+            result.append(qList.get(True))
+        
+        return result
+        
+    def runPrint(self):
+        result = self.run()
         for k in xrange(0, self.numOfPufs):
             for l in xrange(0, self.numOfChallenges):
                 print result[k][l],
             print
-        """
-        return result
 
+def runThread(pufList, pufListLen, numOfChallenges, numOfMultiplexer, MutatorBaseInstance, qList):
+    #print pufListLen
+    #print numOfChallenges
+    #print numOfMultiplexer
+    #print pufList
+    result = [[0 for x in xrange(numOfChallenges)] for x in xrange(pufListLen)] 
+    challengeList = []
+    for i in xrange(0, pufListLen):
+        challengeList = genChallengeList(numOfMultiplexer, numOfChallenges)
+        for j in xrange(0, numOfChallenges):            
+            result[i][j] = (pufList[i].challengeBit(challengeList[j]), pufList[i].challengeBit(MutatorBaseInstance.mutateChallenge(challengeList[j], numOfMultiplexer)))
+    qList.put(result)
 
 #base class for challenge mutation
 class MutatorBase(object):
@@ -175,5 +203,6 @@ class MutatorBase(object):
 class MutatorLastBitSwitch(MutatorBase):
     
     def mutateChallenge(self, challenge, length):
-        challenge[length-1] = challenge[length-1] ^ 1
-        return challenge
+        challengeCopy = challenge
+        challengeCopy[length-1] = challengeCopy[length-1] ^ 1
+        return challengeCopy
