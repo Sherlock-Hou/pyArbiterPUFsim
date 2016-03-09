@@ -29,6 +29,23 @@ class KNN(object):
         # Alle Werte der Ausgabeneuronen als Liste zurückgeben
         return [neuron.wert for neuron in self.ausgabeNeuronen]
 
+    def toString(self):
+        string = "EingabeWerte: "
+        string += str([str(eingabeNeuron.wert) for eingabeNeuron in knn.eingabeNeuronen]) + "\n"
+        for layer, zwischenNeuronen in enumerate(self.zwischenNeuronen, start=0):
+            string += str(layer) + ". Axone "
+            for neuron in zwischenNeuronen:
+                for axon in neuron.axone:
+                    string += str(axon.gewicht) + " "
+            string += "\n" + str(layer) + ". Neuronen "
+            for neuron in zwischenNeuronen:
+                string += str(neuron.wert) + " "
+        string += "\n"
+        string += str(len(self.zwischenNeuronen)) + ". Axone "
+        for axon in self.ausgabeNeuronen[0].axone:
+            string += str(axon.gewicht) + " "
+        return string + "\n"
+
 class Axon(object):
     """ein künstliches Axon, das eine Kante in einem KNN darstellt."""
     def __init__(self, neuron=None):
@@ -51,7 +68,7 @@ class Neuron(object):
         # Aktivierungsfunktion anwenden
         self.wert = self.aktivierung(summe)
 
-def trainiere(knn, trainingsdatensatz, lernrate=0.1):
+def trainiereSLP(knn, trainingsdatensatz, lernrate=0.1):
     # Alle Trainingsdaten durchspielen
     for eingabedaten, ausgabeErwartet in trainingsdatensatz:
         # Ergebnis des KNN berechnen
@@ -75,9 +92,9 @@ if __name__ == '__main__':
     knnLayers = [3]
 
     # Zufällige PUF erzeugen
-    #puf = pufsim.puf(pufsim.RNDUniform(), pufLength)
+    puf = pufsim.puf(pufsim.RNDUniform(), pufLength)
     # Gleiche PUF erzeugen
-    puf = pufsim.puf(SameMultiplexerTimes(), pufLength)
+    #puf = pufsim.puf(SameMultiplexerTimes(), pufLength)
 
     # Neuronales Netz konstruieren
     knn = KNN()
@@ -112,27 +129,20 @@ if __name__ == '__main__':
     trainingsdatensatz = []
     for challenge in challenges:
         trainingsdatensatz.append((challenge, [puf.challengeBit(challenge)]))
-    print(trainingsdatensatz)
+    print trainingsdatensatz
 
-    print("Vor dem Training: knn vs. response")
+    print "Vor dem Training: knn vs. response"
     ratio = 0
     for eingabewerte, ausgabewerte in trainingsdatensatz:
         knn.berechne(eingabewerte)
         ratio += 1 if round(knn.ausgabeNeuronen[0].wert) == ausgabewerte[0] else 0
         #print round(knn.ausgabeNeuronen[0].wert), ausgabewerte[0]
     print "% ", float(ratio) / len(trainingsdatensatz)
-
-    # Knn Übersichtsausgabe
-    for eingabeNeuron in knn.eingabeNeuronen:
-        print str(eingabeNeuron.wert) + " -",
-    for layer, zwischenNeuronen in enumerate(knn.zwischenNeuronen, start=0):
-        print "\n" + str(layer) + ". Layer ",
-        for neuron in zwischenNeuronen:
-            print str(neuron.wert) + " ",
+    print knn.toString()
 
     # Training
     for i in range(10000):
-        trainiere(knn, trainingsdatensatz)
+        trainiereSLP(knn, trainingsdatensatz)
 
     print "\nNach dem Training: knn vs. response"
     ratio = 0
@@ -141,15 +151,7 @@ if __name__ == '__main__':
         ratio += 1 if round(knn.ausgabeNeuronen[0].wert) == ausgabewerte[0] else 0
         #print round(knn.ausgabeNeuronen[0].wert), ausgabewerte[0]
     print "% ", float(ratio) / len(trainingsdatensatz)
-
-
-    # Knn Übersichtsausgabe
-    for eingabeNeuron in knn.eingabeNeuronen:
-        print str(eingabeNeuron.wert) + " -",
-    for layer, zwischenNeuronen in enumerate(knn.zwischenNeuronen, start=0):
-        print "\n" + str(layer) + ". Layer ",
-        for neuron in zwischenNeuronen:
-            print str(neuron.wert) + " ",
+    print knn.toString()
 
     #create pufsim with 2 Multiplexer instances
 
