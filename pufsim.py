@@ -83,11 +83,11 @@ class RNDUniform(RNDBase):
     def generateTimes(self):
         return (random.random(),random.random(),random.random(),random.random())
 
-#absolute standard normal distribution
+#standard normal distribution
 class RNDNormal(RNDBase):
     
     def generateTimes(self):
-        return (abs(random.normalvariate(0,1.0)),abs(random.normalvariate(0,1.0)),abs(random.normalvariate(0,1.0)),abs(random.normalvariate(0,1.0)))
+        return (random.normalvariate(0,1.0), random.normalvariate(0,1.0), random.normalvariate(0,1.0), random.normalvariate(0,1.0))
 
 def genChallengeList(challengeSize, numOfChallenges):
     if ((2 ** challengeSize) == numOfChallenges) :
@@ -178,10 +178,6 @@ class pufEval(object):
             print
 
 def runThread(pufList, pufListLen, numOfChallenges, numOfMultiplexer, MutatorBaseInstance, qList):
-    #print pufListLen
-    #print numOfChallenges
-    #print numOfMultiplexer
-    #print pufList
     result = [[0 for x in xrange(numOfChallenges)] for x in xrange(pufListLen)] 
     challengeList = []
     for i in xrange(0, pufListLen):
@@ -203,6 +199,5 @@ class MutatorBase(object):
 class MutatorLastBitSwitch(MutatorBase):
     
     def mutateChallenge(self, challenge, length):
-        challengeCopy = challenge
-        challengeCopy[length-1] = challengeCopy[length-1] ^ 1
-        return challengeCopy
+        challenge[length-1] = challenge[length-1] ^ 1
+        return challenge
