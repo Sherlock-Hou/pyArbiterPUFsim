@@ -105,6 +105,8 @@ if __name__ == '__main__':
         tmp = Neuron()
         knn.eingabeNeuronen.append(tmp)
 
+    # REFACTOREN!!!
+    #todo TrainingsAlg + Backpropagation anpassen!!
     if knnLayers == 0:
         for eingabeNeuron in knn.eingabeNeuronen:
             knn.ausgabeNeuronen[0].axone.append(Axon(eingabeNeuron))
@@ -121,9 +123,9 @@ if __name__ == '__main__':
                         for previousLayerNeuronen in knn.zwischenNeuronen[layer-1]:
                             layerNeuronen.axone.append(Axon(previousLayerNeuronen))
 
-                if layer == len(knnLayers) - 1:
-                    for lastLayerNeuronen in knn.zwischenNeuronen[layer]:
-                        knn.ausgabeNeuronen[0].axone.append(Axon(lastLayerNeuronen))
+            if layer == len(knnLayers) - 1:
+                for lastLayerNeuronen in knn.zwischenNeuronen[layer]:
+                    knn.ausgabeNeuronen[0].axone.append(Axon(lastLayerNeuronen))
 
     challenges = pufsim.genChallengeList(pufLength, 2 ** pufLength)
     trainingsdatensatz = []
