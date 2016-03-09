@@ -166,17 +166,35 @@ class pufEval(object):
         result = []
         for j in xrange(0, self.numOfThreads):
             #set block=True to block until we get a result
-            result.append(qList.get(True))
+            result.extend(qList.get(True))
         
         return result
         
     def runPrint(self):
         result = self.run()
+        print result
+        print self.numOfPufs
+        print self.numOfChallenges
         for k in xrange(0, self.numOfPufs):
+            print k
             for l in xrange(0, self.numOfChallenges):
+                print l
                 print result[k][l],
             print
-
+    
+    def runStats(self):
+        result = self.run()
+        stats = []
+        tmp = 0
+        for k in xrange(0, self.numOfPufs):
+            for l in xrange(0, self.numOfChallenges):
+                if (result[k][l][0] != result[k][l][1]):
+                    tmp += 1
+            stats.append(tmp/float(self.numOfChallenges))
+            tmp = 0
+        print stats
+        
+#function for multiprocessing, not part of class because this solution seems to be faster
 def runThread(pufList, pufListLen, numOfChallenges, numOfMultiplexer, MutatorBaseInstance, qList):
     result = [[0 for x in xrange(numOfChallenges)] for x in xrange(pufListLen)] 
     challengeList = []
