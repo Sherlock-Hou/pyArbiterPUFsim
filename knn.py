@@ -2,7 +2,7 @@
 
 import math
 import pufsim
-import time
+
 
 def tangential(x):
     """Anti-symmetrische sigmoide Aktivierungsfunktion."""
@@ -12,11 +12,16 @@ class KNN(object):
     """Ein Künstliches Neuronales Netz."""
     def __init__(self):
         self.eingabeNeuronen = []
+        self.zwischenNeuronen = [[]] # zweidimensional
         self.ausgabeNeuronen = []
 
     def berechne(self, eingabewerte):
         for i in range(len(eingabewerte)):
             self.eingabeNeuronen[i].wert = eingabewerte[i]
+
+        for zwischenNeuron in self.zwischenNeuronen:
+            for neuron in zwischenNeuron:
+                neuron.berechne()
 
         for ausgabeNeuron in self.ausgabeNeuronen:
             ausgabeNeuron.berechne()
@@ -25,7 +30,7 @@ class KNN(object):
         return [neuron.wert for neuron in self.ausgabeNeuronen]
 
 class Axon(object):
-    """ein kpnstliches Axon, das eine Kante in einem KNN darstellt."""
+    """ein künstliches Axon, das eine Kante in einem KNN darstellt."""
     def __init__(self, neuron=None):
         self.gewicht = 1.0
         self.neuron = neuron
@@ -43,7 +48,7 @@ class Neuron(object):
         for axon in self.axone:
             summe += axon.gewicht*axon.neuron.wert
 
-        # Aktivierungsfunkrion anwenden
+        # Aktivierungsfunktion anwenden
         self.wert = self.aktivierung(summe)
 
 def trainiere(knn, trainingsdatensatz, lernrate=0.1):
@@ -65,45 +70,86 @@ class SameMultiplexerTimes():
 
 if __name__ == '__main__':
 
-    puflength = 6
+    # Puf Länge festlegen
+    pufLength = 4
+    knnLayers = [3]
+
+    # Zufällige PUF erzeugen
+    #puf = pufsim.puf(pufsim.RNDUniform(), pufLength)
+    # Gleiche PUF erzeugen
+    puf = pufsim.puf(SameMultiplexerTimes(), pufLength)
+
     # Neuronales Netz konstruieren
     knn = KNN()
-
-    #puf = pufsim.puf(pufsim.RNDUniform(), puflength)
-    puf = pufsim.puf(SameMultiplexerTimes(), puflength)
     # Ausgabeneuron
     knn.ausgabeNeuronen.append(Neuron())
-    # Zwei Sensoren
-    for i in range(puflength):
+    # Eingabeneuronen
+    for i in range(pufLength):
         tmp = Neuron()
         knn.eingabeNeuronen.append(tmp)
-        knn.ausgabeNeuronen[0].axone.append(Axon(tmp))
 
-    challenges = pufsim.genChallengeList(puflength, 2 ** puflength)
+    if knnLayers == 0:
+        for eingabeNeuron in knn.eingabeNeuronen:
+            knn.ausgabeNeuronen[0].axone.append(Axon(eingabeNeuron))
+    else:
+        for layer, numberNeurons in enumerate(knnLayers, start=0):
+            for i in range(numberNeurons):
+                knn.zwischenNeuronen[layer].append(Neuron())
+                if layer == 0:
+                    for firstLayerNeuronen in knn.zwischenNeuronen[0]:
+                        for eingabeNeuron in knn.eingabeNeuronen:
+                            firstLayerNeuronen.axone.append(Axon(eingabeNeuron))
+                else:
+                    for layerNeuronen in knn.zwischenNeuronen[layer]:
+                        for previousLayerNeuronen in knn.zwischenNeuronen[layer-1]:
+                            layerNeuronen.axone.append(Axon(previousLayerNeuronen))
+
+                if layer == len(knnLayers) - 1:
+                    for lastLayerNeuronen in knn.zwischenNeuronen[layer]:
+                        knn.ausgabeNeuronen[0].axone.append(Axon(lastLayerNeuronen))
+
+    challenges = pufsim.genChallengeList(pufLength, 2 ** pufLength)
     trainingsdatensatz = []
     for challenge in challenges:
         trainingsdatensatz.append((challenge, [puf.challengeBit(challenge)]))
-    print trainingsdatensatz
+    print(trainingsdatensatz)
 
-    print "Vor dem Training: knn vs. response"
+    print("Vor dem Training: knn vs. response")
     ratio = 0
     for eingabewerte, ausgabewerte in trainingsdatensatz:
         knn.berechne(eingabewerte)
         ratio += 1 if round(knn.ausgabeNeuronen[0].wert) == ausgabewerte[0] else 0
         #print round(knn.ausgabeNeuronen[0].wert), ausgabewerte[0]
     print "% ", float(ratio) / len(trainingsdatensatz)
+
+    # Knn Übersichtsausgabe
+    for eingabeNeuron in knn.eingabeNeuronen:
+        print str(eingabeNeuron.wert) + " -",
+    for layer, zwischenNeuronen in enumerate(knn.zwischenNeuronen, start=0):
+        print "\n" + str(layer) + ". Layer ",
+        for neuron in zwischenNeuronen:
+            print str(neuron.wert) + " ",
 
     # Training
-    for i in range(10):
+    for i in range(10000):
         trainiere(knn, trainingsdatensatz)
 
-    print "Nach dem Training: knn vs. response"
+    print "\nNach dem Training: knn vs. response"
     ratio = 0
     for eingabewerte, ausgabewerte in trainingsdatensatz:
         knn.berechne(eingabewerte)
         ratio += 1 if round(knn.ausgabeNeuronen[0].wert) == ausgabewerte[0] else 0
         #print round(knn.ausgabeNeuronen[0].wert), ausgabewerte[0]
     print "% ", float(ratio) / len(trainingsdatensatz)
+
+
+    # Knn Übersichtsausgabe
+    for eingabeNeuron in knn.eingabeNeuronen:
+        print str(eingabeNeuron.wert) + " -",
+    for layer, zwischenNeuronen in enumerate(knn.zwischenNeuronen, start=0):
+        print "\n" + str(layer) + ". Layer ",
+        for neuron in zwischenNeuronen:
+            print str(neuron.wert) + " ",
 
     #create pufsim with 2 Multiplexer instances
 
