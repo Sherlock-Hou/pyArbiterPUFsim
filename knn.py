@@ -35,9 +35,10 @@ class KNN(object):
         for layer, zwischenNeuronen in enumerate(self.zwischenNeuronen, start=0):
             string += str(layer) + ". Axone "
             for neuron in zwischenNeuronen:
+                string += "| "
                 for axon in neuron.axone:
                     string += str(axon.gewicht) + " "
-            string += "\n" + str(layer) + ". Neuronen "
+            string += "\n" + str(layer) + ". Neuronen[" + str(len(self.zwischenNeuronen[layer])) + "]: "
             for neuron in zwischenNeuronen:
                 string += str(neuron.wert) + " "
         string += "\n"
@@ -107,25 +108,31 @@ if __name__ == '__main__':
 
     # REFACTOREN!!!
     #todo TrainingsAlg + Backpropagation anpassen!!
+
+    #Verbinde Neuronen bei SLP
     if knnLayers == 0:
         for eingabeNeuron in knn.eingabeNeuronen:
             knn.ausgabeNeuronen[0].axone.append(Axon(eingabeNeuron))
     else:
         for layer, numberNeurons in enumerate(knnLayers, start=0):
+            #Add Neuronen für die Ebenen
             for i in range(numberNeurons):
                 knn.zwischenNeuronen[layer].append(Neuron())
-                if layer == 0:
-                    for firstLayerNeuronen in knn.zwischenNeuronen[0]:
-                        for eingabeNeuron in knn.eingabeNeuronen:
-                            firstLayerNeuronen.axone.append(Axon(eingabeNeuron))
-                else:
-                    for layerNeuronen in knn.zwischenNeuronen[layer]:
-                        for previousLayerNeuronen in knn.zwischenNeuronen[layer-1]:
-                            layerNeuronen.axone.append(Axon(previousLayerNeuronen))
-
+            #Verbinde Neuronen der ersten, inneren Ebene zu Eingangsneuronen
+            if layer == 0:
+                for firstLayerNeuronen in knn.zwischenNeuronen[0]:
+                    for eingabeNeuron in knn.eingabeNeuronen:
+                        firstLayerNeuronen.axone.append(Axon(eingabeNeuron))
+            #Verbinde Neuronen auf Zwischenebenen
+            else:
+                for layerNeuronen in knn.zwischenNeuronen[layer]:
+                    for previousLayerNeuronen in knn.zwischenNeuronen[layer-1]:
+                        layerNeuronen.axone.append(Axon(previousLayerNeuronen))
+            #Verbinde Neuronen der letzten, inneren Ebene zu einem Ausgabeneuron
             if layer == len(knnLayers) - 1:
                 for lastLayerNeuronen in knn.zwischenNeuronen[layer]:
                     knn.ausgabeNeuronen[0].axone.append(Axon(lastLayerNeuronen))
+
 
     challenges = pufsim.genChallengeList(pufLength, 2 ** pufLength)
     trainingsdatensatz = []
