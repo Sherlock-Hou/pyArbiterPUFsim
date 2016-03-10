@@ -142,6 +142,14 @@ class DatasetBuilder(object):
     def evaluationSet(self):
         return self.dataSet[int(round(self._trainingEvalRatio * self._maxChallengeSize)):]
 
+def kNNRatio(knn, dataSet):
+    ratio = 0
+    for eingabewerte, ausgabewerte in dataSet:
+        knn.berechne(eingabewerte)
+        ratio += 1 if round(knn.ausgabeNeuronen[0].wert) == ausgabewerte[0] else 0
+    return float(ratio) / len(dataSet)
+
+
 class SameMultiplexerTimes():
     def generateTimes(self):
         return (0.966967509537182, 0.1257048514440371, 0.2706525095800949, 0.3575951436163608)
@@ -169,13 +177,7 @@ if __name__ == '__main__':
     print "Evaluationsset: " + str(evaluationdatensatz)
 
     print "Vor dem Training: knn vs. response"
-    ratio = 0
-    for eingabewerte, ausgabewerte in trainingsdatensatz:
-        knn.berechne(eingabewerte)
-        ratio += 1 if round(knn.ausgabeNeuronen[0].wert) == ausgabewerte[0] else 0
-        #print round(knn.ausgabeNeuronen[0].wert), ausgabewerte[0]
-    print "% ", float(ratio) / len(trainingsdatensatz)
-
+    print "% ", kNNRatio(knn,trainingsdatensatz)
     print knn.toString()
 
     # Training
@@ -183,14 +185,8 @@ if __name__ == '__main__':
         trainiereSLP(knn, trainingsdatensatz)
 
     print knn.toString()
-
     print "Nach dem Training: knn vs. response"
-    ratio = 0
-    for eingabewerte, ausgabewerte in evaluationdatensatz:
-        knn.berechne(eingabewerte)
-        ratio += 1 if round(knn.ausgabeNeuronen[0].wert) == ausgabewerte[0] else 0
-        #print round(knn.ausgabeNeuronen[0].wert), ausgabewerte[0]
-    print "% ", float(ratio) / len(evaluationdatensatz)
+    print "% ", kNNRatio(knn,evaluationdatensatz)
 
     #create pufsim with 2 Multiplexer instances
 
