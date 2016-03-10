@@ -38,9 +38,9 @@ class KNN(object):
                 string += "| "
                 for axon in neuron.axone:
                     string += str(axon.gewicht) + " "
-            string += "\n" + str(layer) + ". Neuronen[" + str(len(self.zwischenNeuronen[layer])) + "]: "
-            for neuron in zwischenNeuronen:
-                string += str(neuron.wert) + " "
+            #string += "\n" + str(layer) + ". Neuronen[" + str(len(self.zwischenNeuronen[layer])) + "]: "
+            #for neuron in zwischenNeuronen:
+            #    string += str(neuron.wert) + " "
         string += "\n"
         string += str(len(self.zwischenNeuronen)) + ". Axone "
         for axon in self.ausgabeNeuronen[0].axone:
@@ -82,12 +82,72 @@ def trainiereSLP(knn, trainingsdatensatz, lernrate=0.1):
             for axon in neuron.axone:
                 axon.gewicht += lernrate*differenz*axon.neuron.wert
 
+class KNNBuilder(object):
+
+    def __init__(self, numberOfInputs, innerDimentions):
+        self.numberOfInputs = numberOfInputs
+        self.innerDimentions = innerDimentions
+
+    def build(self):
+         # Neuronales Netz konstruieren
+        knn = KNN()
+        # Ausgabeneuron
+        knn.ausgabeNeuronen.append(Neuron())
+        # Eingabeneuronen
+        for i in range(self.numberOfInputs):
+            knn.eingabeNeuronen.append(Neuron())
+
+        # REFACTOREN!!
+        #Verbinde Neuronen bei SLP
+        if knnLayers == 0:
+            for eingabeNeuron in knn.eingabeNeuronen:
+                knn.ausgabeNeuronen[0].axone.append(Axon(eingabeNeuron))
+        else:
+            for layer, numberNeurons in enumerate(knnLayers, start=0):
+                #Add Neuronen für die Ebenen
+                for i in range(numberNeurons):
+                    knn.zwischenNeuronen[layer].append(Neuron())
+                #Verbinde Neuronen der ersten, inneren Ebene zu Eingangsneuronen
+                if layer == 0:
+                    for firstLayerNeuronen in knn.zwischenNeuronen[0]:
+                        for eingabeNeuron in knn.eingabeNeuronen:
+                            firstLayerNeuronen.axone.append(Axon(eingabeNeuron))
+                #Verbinde Neuronen auf Zwischenebenen
+                else:
+                    for layerNeuronen in knn.zwischenNeuronen[layer]:
+                        for previousLayerNeuronen in knn.zwischenNeuronen[layer-1]:
+                            layerNeuronen.axone.append(Axon(previousLayerNeuronen))
+                #Verbinde Neuronen der letzten, inneren Ebene zu einem Ausgabeneuron
+                if layer == len(knnLayers) - 1:
+                    for lastLayerNeuronen in knn.zwischenNeuronen[layer]:
+                        knn.ausgabeNeuronen[0].axone.append(Axon(lastLayerNeuronen))
+        return knn
+
+class DatasetBuilder(object):
+
+    def __init__(self, dataSize, trainingEvalRatio=0.7):
+        self.dataSet = []
+        self._maxChallengeSize = dataSize ** 2
+        self._trainingEvalRatio = trainingEvalRatio
+
+        challenges = pufsim.genChallengeList(dataSize, self._maxChallengeSize)
+        for challenge in challenges:
+            self.dataSet.append((challenge, [puf.challengeBit(challenge)]))
+
+    @property
+    def trainingsSet(self):
+        return self.dataSet[:int(round(self._trainingEvalRatio * self._maxChallengeSize))]
+
+    @property
+    def evaluationSet(self):
+        return self.dataSet[int(round(self._trainingEvalRatio * self._maxChallengeSize)):]
+
 class SameMultiplexerTimes():
     def generateTimes(self):
         return (0.966967509537182, 0.1257048514440371, 0.2706525095800949, 0.3575951436163608)
 
 if __name__ == '__main__':
-
+    #todo BackpropagationAlg, Refactorn, Docu
     # Puf Länge festlegen
     pufLength = 4
     knnLayers = [3]
@@ -97,48 +157,16 @@ if __name__ == '__main__':
     # Gleiche PUF erzeugen
     #puf = pufsim.puf(SameMultiplexerTimes(), pufLength)
 
-    # Neuronales Netz konstruieren
-    knn = KNN()
-    # Ausgabeneuron
-    knn.ausgabeNeuronen.append(Neuron())
-    # Eingabeneuronen
-    for i in range(pufLength):
-        tmp = Neuron()
-        knn.eingabeNeuronen.append(tmp)
+    #KNN erstellen
+    knnBuilder = KNNBuilder(pufLength, knnLayers)
+    knn = knnBuilder.build()
 
-    # REFACTOREN!!!
-    #todo TrainingsAlg + Backpropagation anpassen!!
-
-    #Verbinde Neuronen bei SLP
-    if knnLayers == 0:
-        for eingabeNeuron in knn.eingabeNeuronen:
-            knn.ausgabeNeuronen[0].axone.append(Axon(eingabeNeuron))
-    else:
-        for layer, numberNeurons in enumerate(knnLayers, start=0):
-            #Add Neuronen für die Ebenen
-            for i in range(numberNeurons):
-                knn.zwischenNeuronen[layer].append(Neuron())
-            #Verbinde Neuronen der ersten, inneren Ebene zu Eingangsneuronen
-            if layer == 0:
-                for firstLayerNeuronen in knn.zwischenNeuronen[0]:
-                    for eingabeNeuron in knn.eingabeNeuronen:
-                        firstLayerNeuronen.axone.append(Axon(eingabeNeuron))
-            #Verbinde Neuronen auf Zwischenebenen
-            else:
-                for layerNeuronen in knn.zwischenNeuronen[layer]:
-                    for previousLayerNeuronen in knn.zwischenNeuronen[layer-1]:
-                        layerNeuronen.axone.append(Axon(previousLayerNeuronen))
-            #Verbinde Neuronen der letzten, inneren Ebene zu einem Ausgabeneuron
-            if layer == len(knnLayers) - 1:
-                for lastLayerNeuronen in knn.zwischenNeuronen[layer]:
-                    knn.ausgabeNeuronen[0].axone.append(Axon(lastLayerNeuronen))
-
-
-    challenges = pufsim.genChallengeList(pufLength, 2 ** pufLength)
-    trainingsdatensatz = []
-    for challenge in challenges:
-        trainingsdatensatz.append((challenge, [puf.challengeBit(challenge)]))
-    print trainingsdatensatz
+    #Datensets erstellen
+    dataSetBulider = DatasetBuilder(pufLength)
+    trainingsdatensatz = dataSetBulider.trainingsSet
+    evaluationdatensatz = dataSetBulider.evaluationSet
+    print "Trainingsset: " + str(trainingsdatensatz)
+    print "Evaluationsset: " + str(evaluationdatensatz)
 
     print "Vor dem Training: knn vs. response"
     ratio = 0
@@ -147,20 +175,22 @@ if __name__ == '__main__':
         ratio += 1 if round(knn.ausgabeNeuronen[0].wert) == ausgabewerte[0] else 0
         #print round(knn.ausgabeNeuronen[0].wert), ausgabewerte[0]
     print "% ", float(ratio) / len(trainingsdatensatz)
+
     print knn.toString()
 
     # Training
     for i in range(10000):
         trainiereSLP(knn, trainingsdatensatz)
 
-    print "\nNach dem Training: knn vs. response"
+    print knn.toString()
+
+    print "Nach dem Training: knn vs. response"
     ratio = 0
-    for eingabewerte, ausgabewerte in trainingsdatensatz:
+    for eingabewerte, ausgabewerte in evaluationdatensatz:
         knn.berechne(eingabewerte)
         ratio += 1 if round(knn.ausgabeNeuronen[0].wert) == ausgabewerte[0] else 0
         #print round(knn.ausgabeNeuronen[0].wert), ausgabewerte[0]
-    print "% ", float(ratio) / len(trainingsdatensatz)
-    print knn.toString()
+    print "% ", float(ratio) / len(evaluationdatensatz)
 
     #create pufsim with 2 Multiplexer instances
 
