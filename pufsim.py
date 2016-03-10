@@ -4,6 +4,9 @@ from abc import ABCMeta, abstractmethod
 import itertools
 import random
 from multiprocessing import Process, Queue
+import numpy as np
+import matplotlib.pyplot as plt
+import time
 
 #single multiplexer
 class multiplexer(object):
@@ -157,6 +160,8 @@ class pufEval(object):
         qList = Queue()
         pList = []
         
+        startTime = time.time()
+        
         for i in xrange(0, self.numOfThreads):
             #self.run(self.pufList[pufListRanges[i][0] : (pufListRanges[i][1] -1)], (pufListRanges[i][1] - pufListRanges[i][0]),self.numOfChallenges, self.numOfMultiplexer, self.MutatorBaseInstance, qList)
             pList.append( Process(target=runThread, args=(self.pufList[pufListRanges[i][0] : (pufListRanges[i][1])], (pufListRanges[i][1] - pufListRanges[i][0]),self.numOfChallenges, self.numOfMultiplexer, self.MutatorBaseInstance, qList)))
@@ -168,17 +173,15 @@ class pufEval(object):
             #set block=True to block until we get a result
             result.extend(qList.get(True))
         
+        endTime = time.time()
+        print  "Total calculation time: " + str(endTime - startTime)
+        
         return result
         
     def runPrint(self):
         result = self.run()
-        print result
-        print self.numOfPufs
-        print self.numOfChallenges
         for k in xrange(0, self.numOfPufs):
-            print k
             for l in xrange(0, self.numOfChallenges):
-                print l
                 print result[k][l],
             print
     
@@ -192,7 +195,17 @@ class pufEval(object):
                     tmp += 1
             stats.append(tmp/float(self.numOfChallenges))
             tmp = 0
-        print stats
+        return stats
+
+    def runPlot(self, save):
+        stats = self.runStats()
+        n, bins, patches = plt.hist(stats, 20, normed=1, facecolor='y')
+        if save:
+            name = 'Hist-k' + str(self.numOfMultiplexer) + 'NrOfPuf' + str(self.numOfPufs) + 'NrOfChal' + str(self.numOfChallenges)
+            plt.savefig(name, bbox_inches='tight')
+        else:
+            plt.show()
+        
         
 #function for multiprocessing, not part of class because this solution seems to be faster
 def runThread(pufList, pufListLen, numOfChallenges, numOfMultiplexer, MutatorBaseInstance, qList):
@@ -218,4 +231,11 @@ class MutatorLastBitSwitch(MutatorBase):
     
     def mutateChallenge(self, challenge, length):
         challenge[length-1] = challenge[length-1] ^ 1
+        return challenge
+
+#last bit switch mutator
+class MutatorMiddleBitSwitch(MutatorBase):
+    
+    def mutateChallenge(self, challenge, length):
+        challenge[length/2] = challenge[length/2] ^ 1
         return challenge
