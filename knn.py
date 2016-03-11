@@ -2,11 +2,17 @@
 
 import math
 import pufsim
-
+import numpy as np
 
 def tangential(x):
     """Anti-symmetrische sigmoide Aktivierungsfunktion."""
     return math.tanh(x)
+
+# sigmoid function
+def sigmoid(x,deriv=False):
+    if(deriv==True):
+        return x*(1-x)
+    return 1/(1+np.exp(-x))
 
 class KNN(object):
     """Ein Künstliches Neuronales Netz."""
@@ -58,7 +64,8 @@ class Neuron(object):
     def __init__(self, wert=0.0):
         self.wert = wert
         self.axone = []  # Kanten zu anderen (Eingabe-)Neuronen
-        self.aktivierung = tangential
+        #self.aktivierung = tangential #SLP
+        self.aktivierung = sigmoid # Multilayer
 
     def berechne(self):
         # Aufsummieren
@@ -82,6 +89,45 @@ def trainiereSLP(knn, trainingsdatensatz, lernrate=0.1):
             for axon in neuron.axone:
                 axon.gewicht += lernrate*differenz*axon.neuron.wert
 
+def trainiere2(knn, trainingsdatensatz, lernrate=0.1):
+    # Alle Trainingsdaten durchspielen
+    for eingabedaten, ausgabeErwartet in trainingsdatensatz:
+        # Ergebnis des KNN berechnen
+        ausgabeBerechnet = knn.berechne(eingabedaten)
+        # Netz verändern
+        for i, neuron in enumerate(knn.ausgabeNeuronen):
+            differenz = ausgabeErwartet[i] - ausgabeBerechnet[i]
+            # Gewichte der anliegenden Axone anpassen;
+            # die Differenz bestimmt, in welche Richtung
+            for axon in neuron.axone:
+                axon.gewicht += lernrate*differenz*axon.neuron.wert
+
+# def updateGewich
+
+
+# def trainiereBackprop(knn, trainingsdatensatz):
+#     train = np.array(trainingsdatensatz)
+#
+#     knn.berechne(trainingsdatensatz)
+#
+#     for challenge, response in train:
+#
+#         # forward propagation
+#         l0 = X
+#         l1 = nonlin(np.dot(l0, syn0))
+#
+#         # how much did we miss?
+#         l1_error = y - l1
+#
+#         # multiply how much we missed by the
+#         # slope of the sigmoid at the values in l1
+#         l1_delta = l1_error * nonlin(l1, True)
+#
+#         # update weights
+#         syn0 += np.dot(l0.T, l1_delta)
+
+
+
 class KNNBuilder(object):
 
     def __init__(self, numberOfInputs, innerDimentions):
@@ -97,7 +143,7 @@ class KNNBuilder(object):
         for i in range(self.numberOfInputs):
             knn.eingabeNeuronen.append(Neuron())
 
-        # REFACTOREN!!
+        #todo REFACTOREN!!
         #Verbinde Neuronen bei SLP
         if knnLayers == 0:
             for eingabeNeuron in knn.eingabeNeuronen:
@@ -180,9 +226,13 @@ if __name__ == '__main__':
     print "% ", kNNRatio(knn,trainingsdatensatz)
     print knn.toString()
 
-    # Training
+    # Training SLP
     for i in range(10000):
         trainiereSLP(knn, trainingsdatensatz)
+
+    # Training Multilayer
+    #for i in range(10000):
+    #    trainiereBackprop(knn, trainingsdatensatz
 
     print knn.toString()
     print "Nach dem Training: knn vs. response"
