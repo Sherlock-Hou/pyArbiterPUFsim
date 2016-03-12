@@ -34,7 +34,7 @@ class puf(object):
         self.numOfMultip = numOfMultip
         self.multiplexerList = []
         
-        for i in xrange(0, self.numOfMultip):
+        for i in range(0, self.numOfMultip):
             tmp = multiplexer(gen.generateTimes())
             self.multiplexerList.append(tmp)
 
@@ -61,7 +61,7 @@ class puf(object):
     #prints nice string ...
     def challengeSingle(self, bitList):
         time_up, time_down = self.challenge(bitList)
-        print '{' + ', '.join(map(str, bitList)) + '}\t' + str(time_up - time_down)
+        print('{' + ', '.join(map(str, bitList)) + '}\t' + str(time_up - time_down))
         
     #single challenge to the puf
     #return: one bit result
@@ -145,14 +145,14 @@ class pufEval(object):
         
         #creating puf instances
         self.pufList = []
-        for i in xrange(0, self.numOfPufs): 
+        for i in range(0, self.numOfPufs):
             self.pufList.append(puf(self.RNDBaseInstance, self.numOfMultiplexer))
 
     def run(self):
         #calculating list ranges for multi core processing
         rest = self.numOfPufs % self.numOfThreads
         pufListRanges = []
-        for j in xrange(0, self.numOfThreads):
+        for j in range(0, self.numOfThreads):
             pufListRanges.append([(j * ((self.numOfPufs - rest) / self.numOfThreads)), ((j + 1) * ((self.numOfPufs - rest) / self.numOfThreads))])
         pufListRanges[self.numOfThreads - 1][1] = pufListRanges[self.numOfThreads - 1][1] + rest
         
@@ -162,35 +162,35 @@ class pufEval(object):
         
         startTime = time.time()
         
-        for i in xrange(0, self.numOfThreads):
+        for i in range(0, self.numOfThreads):
             #self.run(self.pufList[pufListRanges[i][0] : (pufListRanges[i][1] -1)], (pufListRanges[i][1] - pufListRanges[i][0]),self.numOfChallenges, self.numOfMultiplexer, self.MutatorBaseInstance, qList)
             pList.append( Process(target=runThread, args=(self.pufList[pufListRanges[i][0] : (pufListRanges[i][1])], (pufListRanges[i][1] - pufListRanges[i][0]),self.numOfChallenges, self.numOfMultiplexer, self.MutatorBaseInstance, qList)))
             pList[i].start()
 
         
         result = []
-        for j in xrange(0, self.numOfThreads):
+        for j in range(0, self.numOfThreads):
             #set block=True to block until we get a result
             result.extend(qList.get(True))
         
         endTime = time.time()
-        print  "Total calculation time: " + str(endTime - startTime)
+        print("Total calculation time: " + str(endTime - startTime))
         
         return result
         
     def runPrint(self):
         result = self.run()
-        for k in xrange(0, self.numOfPufs):
-            for l in xrange(0, self.numOfChallenges):
-                print result[k][l],
-            print
+        for k in range(0, self.numOfPufs):
+            for l in range(0, self.numOfChallenges):
+                print(result[k][l],)
+            print()
     
     def runStats(self):
         result = self.run()
         stats = []
         tmp = 0
-        for k in xrange(0, self.numOfPufs):
-            for l in xrange(0, self.numOfChallenges):
+        for k in range(0, self.numOfPufs):
+            for l in range(0, self.numOfChallenges):
                 if (result[k][l][0] != result[k][l][1]):
                     tmp += 1
             stats.append(tmp/float(self.numOfChallenges))
@@ -209,11 +209,11 @@ class pufEval(object):
         
 #function for multiprocessing, not part of class because this solution seems to be faster
 def runThread(pufList, pufListLen, numOfChallenges, numOfMultiplexer, MutatorBaseInstance, qList):
-    result = [[0 for x in xrange(numOfChallenges)] for x in xrange(pufListLen)] 
+    result = [[0 for x in range(numOfChallenges)] for x in range(pufListLen)]
     challengeList = []
-    for i in xrange(0, pufListLen):
+    for i in range(0, pufListLen):
         challengeList = genChallengeList(numOfMultiplexer, numOfChallenges)
-        for j in xrange(0, numOfChallenges):            
+        for j in range(0, numOfChallenges):
             result[i][j] = (pufList[i].challengeBit(challengeList[j]), pufList[i].challengeBit(MutatorBaseInstance.mutateChallenge(challengeList[j], numOfMultiplexer)))
     qList.put(result)
 
