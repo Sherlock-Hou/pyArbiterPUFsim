@@ -4,6 +4,9 @@ from abc import ABCMeta, abstractmethod
 import itertools
 import random
 from multiprocessing import Process, Queue
+import numpy as np
+import matplotlib.pyplot as plt
+import time
 
 #single multiplexer
 class multiplexer(object):
@@ -83,11 +86,11 @@ class RNDUniform(RNDBase):
     def generateTimes(self):
         return (random.random(),random.random(),random.random(),random.random())
 
-#absolute standard normal distribution
+#standard normal distribution
 class RNDNormal(RNDBase):
 
     def generateTimes(self):
-        return (abs(random.normalvariate(0,1.0)),abs(random.normalvariate(0,1.0)),abs(random.normalvariate(0,1.0)),abs(random.normalvariate(0,1.0)))
+        return (random.normalvariate(0,1.0), random.normalvariate(0,1.0), random.normalvariate(0,1.0), random.normalvariate(0,1.0))
 
 def genChallengeList(challengeSize, numOfChallenges):
     if ((2 ** challengeSize) == numOfChallenges) :
@@ -158,6 +161,8 @@ class pufEval(object):
         qList = Queue()
         pList = []
         
+        startTime = time.time()
+        
         for i in xrange(0, self.numOfThreads):
             #self.run(self.pufList[pufListRanges[i][0] : (pufListRanges[i][1] -1)], (pufListRanges[i][1] - pufListRanges[i][0]),self.numOfChallenges, self.numOfMultiplexer, self.MutatorBaseInstance, qList)
             pList.append( Process(target=runThread, args=(self.pufList[pufListRanges[i][0] : (pufListRanges[i][1])], (pufListRanges[i][1] - pufListRanges[i][0]),self.numOfChallenges, self.numOfMultiplexer, self.MutatorBaseInstance, qList)))
@@ -167,7 +172,10 @@ class pufEval(object):
         result = []
         for j in xrange(0, self.numOfThreads):
             #set block=True to block until we get a result
-            result.append(qList.get(True))
+            result.extend(qList.get(True))
+        
+        endTime = time.time()
+        print  "Total calculation time: " + str(endTime - startTime)
         
         return result
         
@@ -177,12 +185,31 @@ class pufEval(object):
             for l in xrange(0, self.numOfChallenges):
                 print result[k][l],
             print
+    
+    def runStats(self):
+        result = self.run()
+        stats = []
+        tmp = 0
+        for k in xrange(0, self.numOfPufs):
+            for l in xrange(0, self.numOfChallenges):
+                if (result[k][l][0] != result[k][l][1]):
+                    tmp += 1
+            stats.append(tmp/float(self.numOfChallenges))
+            tmp = 0
+        return stats
 
+    def runPlot(self, save):
+        stats = self.runStats()
+        n, bins, patches = plt.hist(stats, 20, normed=1, facecolor='y')
+        if save:
+            name = 'Hist-k' + str(self.numOfMultiplexer) + 'NrOfPuf' + str(self.numOfPufs) + 'NrOfChal' + str(self.numOfChallenges)
+            plt.savefig(name, bbox_inches='tight')
+        else:
+            plt.show()
+        
+        
+#function for multiprocessing, not part of class because this solution seems to be faster
 def runThread(pufList, pufListLen, numOfChallenges, numOfMultiplexer, MutatorBaseInstance, qList):
-    #print pufListLen
-    #print numOfChallenges
-    #print numOfMultiplexer
-    #print pufList
     result = [[0 for x in xrange(numOfChallenges)] for x in xrange(pufListLen)] 
     challengeList = []
     for i in xrange(0, pufListLen):
@@ -204,6 +231,22 @@ class MutatorBase(object):
 class MutatorLastBitSwitch(MutatorBase):
     
     def mutateChallenge(self, challenge, length):
-        challengeCopy = challenge
-        challengeCopy[length-1] = challengeCopy[length-1] ^ 1
-        return challengeCopy
+        challenge[length-1] = challenge[length-1] ^ 1
+        return challenge
+
+#last bit switch mutator
+class MutatorMiddleBitSwitch(MutatorBase):
+    
+    def mutateChallenge(self, challenge, length):
+        challenge[length/2] = challenge[length/2] ^ 1
+        return challenge
+
+#switch a (single) bit chosen when initialized
+class MutatorBitSwitch(MutatorBase):
+
+    def __init__(self, i):
+        self.idx = i
+
+    def mutateChallenge(self, challenge, length):
+        challenge[self.idx] = challenge[self.idx] ^ 1
+        return challenge
