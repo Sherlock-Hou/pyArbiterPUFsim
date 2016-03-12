@@ -38,61 +38,61 @@ class puf(object):
     #returns puf size (number of multiplerxers)
     def getSize(self):
         return self.numOfMultip
-    
+
     #single challenge to the puf
     #return: both times as tuple (up, down)
     def challenge(self, bitList):
         time_up = 0.0
         time_down = 0.0
         runner = 0
-        
+
         if len(bitList) != self.numOfMultip:
             raise RuntimeError('Challenge has the wrong length')
-        
+
         for plex in self.multiplexerList:
             time_up, time_down = plex.challenge(bitList[runner], time_up, time_down)
             runner += 1
         return (time_up, time_down)
-        
+
     #single challenge to puf
     #prints nice string ...
     def challengeSingle(self, bitList):
         time_up, time_down = self.challenge(bitList)
         print '{' + ', '.join(map(str, bitList)) + '}\t' + str(time_up - time_down)
-        
+
     #single challenge to the puf
     #return: one bit result
     def challengeBit(self, bitList):
         time_up, time_down = self.challenge(bitList)
-        return 1 if ((time_up - time_down) > 0) else 0
+        return 1 if ((time_up - time_down) >= 0) else 0
 
 #base class for random time generation of a single multiplexer
 class RNDBase(object):
-    
+
     __metaclass__ = ABCMeta
 
-    #generateTimes(self) returns 4 floats as tuple (Quadrupel?) 
+    #generateTimes(self) returns 4 floats as tuple (Quadrupel?)
     #Order of Values: up_up, down_down, up_down, down_up
     @abstractmethod
     def generateTimes(self):
         pass
-        
+
 #Uniform distribution
 class RNDUniform(RNDBase):
-    
+
     def generateTimes(self):
         return (random.random(),random.random(),random.random(),random.random())
 
 #absolute standard normal distribution
 class RNDNormal(RNDBase):
-    
+
     def generateTimes(self):
         return (abs(random.normalvariate(0,1.0)),abs(random.normalvariate(0,1.0)),abs(random.normalvariate(0,1.0)),abs(random.normalvariate(0,1.0)))
 
 def genChallengeList(challengeSize, numOfChallenges):
     if ((2 ** challengeSize) == numOfChallenges) :
         return map(list, itertools.product([0, 1], repeat=challengeSize))
-    else :
+    elif ((2 ** challengeSize) > numOfChallenges) :
         challengeList = []
         tmp = []
         i = 0
@@ -103,23 +103,24 @@ def genChallengeList(challengeSize, numOfChallenges):
                 i += 1
         return challengeList
     #asked for more Challenges then combinations possible
-    raise RuntimeError('numOfChallenges > 2 ^ challengeSize')
+    else :
+        raise RuntimeError('numOfChallenges > 2 ^ challengeSize')
 
 class pufEval(object):
-    
+
     def __init__(self, numOfMultiplexer, RNDBaseInstance, numOfChallenges, MutatorBaseInstance, numOfPufs, numOfThreads):
-        
+
         #not nice, I know (refactor it ...)
         if isinstance(numOfMultiplexer, ( int, long )):
             self.numOfMultiplexer = numOfMultiplexer
         else:
             raise RuntimeError('1 Argument (numOfMultiplexer) is not an Int/Long')
-        
+
         if isinstance(RNDBaseInstance, RNDBase):
             self.RNDBaseInstance = RNDBaseInstance
         else:
             raise RuntimeError('2 Argument (RNDBaseInstance) is not of the Typ RNDBase')
-        
+
         if isinstance(numOfChallenges, ( int, long )):
             self.numOfChallenges = numOfChallenges
         else:
