@@ -239,3 +239,13 @@ class MutatorMiddleBitSwitch(MutatorBase):
     def mutateChallenge(self, challenge, length):
         challenge[length/2] = challenge[length/2] ^ 1
         return challenge
+
+#switch a (single) bit chosen when initialized
+class MutatorBitSwitch(MutatorBase):
+
+    def __init__(self, i):
+        self.idx = i
+
+    def mutateChallenge(self, challenge, length):
+        challenge[self.idx] = challenge[self.idx] ^ 1
+        return challenge
