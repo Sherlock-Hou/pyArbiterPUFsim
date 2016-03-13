@@ -2,6 +2,9 @@
 
 import pufsim
 from math import exp
+from numpy import around
+from scipy.spatial import distance
+import sys
 
 # return the (standard) scalar product of two vectors x and y
 def sprod(x, y):
@@ -28,7 +31,8 @@ def inputProd(c):
 k = 32 # pf size
 m = 1000 # training set size
 n = 10000 # check set size
-maxTrainingIteration = 5000
+convergeDecimals = 6 # number of decimals expected to be equal after one iteration
+maxTrainingIteration = 10e10
 
 # create pufsim with k multiplexer instances
 arbiterpf = pufsim.puf(pufsim.RNDNormal(), k)
@@ -38,6 +42,7 @@ tChallenges = pufsim.genChallengeList(k, min([2**k, m]))
 tSet = [ ([1] + inputProd(c), (-1)**arbiterpf.challengeBit(c)) for c in tChallenges ]
 
 # train LR
+print("training...")
 converged = False
 i = 0
 α = 1.0
@@ -47,12 +52,15 @@ try:
         i += 1
         oldΘ = Θ
         Θ = [ iterateΘj(oldΘ, j, α, m, tSet) for j in range(k+1) ] # note k+1
-        converged = oldΘ == Θ
-        #print("Θ " + str(i) + "th iteration: " + str([ round(e,3) for e in Θ ]))
+        converged = (around(oldΘ,decimals=convergeDecimals) == around(Θ,decimals=convergeDecimals)).all()
+        #print("Θ " + str(i) + "th iteration: " + str([ round(e,convergeDecimals) for e in Θ ]))
+        sys.stdout.write("\r" + str(i) + "th iteration -- current distance: " + str(round(distance.euclidean(oldΘ, Θ), convergeDecimals+2)))
+
 except(OverflowError):
     print("OVERFLOW OCCURED, USING LAST KNOWN Θ")
 
 # assess quality
+print("checking...")
 cChallenges = pufsim.genChallengeList(k, min([2**k, n]))
 good = 0
 bad = 0
