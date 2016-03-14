@@ -267,29 +267,31 @@ class pufEval(object):
             self.pufList.append(self.evalObject(self.RNDBaseInstance, self.numOfMultiplexer))
 
     def run(self):
-        #calculating list ranges for multi core processing
-        rest = self.numOfPufs % self.numOfThreads
-        pufListRanges = []
-        for j in xrange(0, self.numOfThreads):
-            pufListRanges.append([(j * ((self.numOfPufs - rest) / self.numOfThreads)), ((j + 1) * ((self.numOfPufs - rest) / self.numOfThreads))])
-        pufListRanges[self.numOfThreads - 1][1] = pufListRanges[self.numOfThreads - 1][1] + rest
-        
-        
-        qList = Queue()
-        pList = []
-        
-        startTime = time.time()
-        
-        for i in xrange(0, self.numOfThreads):
-            #self.run(self.pufList[pufListRanges[i][0] : (pufListRanges[i][1] -1)], (pufListRanges[i][1] - pufListRanges[i][0]),self.numOfChallenges, self.numOfMultiplexer, self.MutatorBaseInstance, qList)
-            pList.append( Process(target=runThread, args=(self.pufList[pufListRanges[i][0] : (pufListRanges[i][1])], (pufListRanges[i][1] - pufListRanges[i][0]),self.numOfChallenges, self.numOfMultiplexer, self.MutatorBaseInstance, qList)))
-            pList[i].start()
-
-        
         result = []
-        for j in xrange(0, self.numOfThreads):
-            #set block=True to block until we get a result
-            result.extend(qList.get(True))
+        qList = Queue()
+        startTime = time.time()
+        if (self.numOfThreads > 1):
+            #calculating list ranges for multi core processing
+            rest = self.numOfPufs % self.numOfThreads
+            pufListRanges = []
+            for j in xrange(0, self.numOfThreads):
+                pufListRanges.append([(j * ((self.numOfPufs - rest) / self.numOfThreads)), ((j + 1) * ((self.numOfPufs - rest) / self.numOfThreads))])
+            pufListRanges[self.numOfThreads - 1][1] = pufListRanges[self.numOfThreads - 1][1] + rest
+            
+            
+            pList = []
+            
+            for i in xrange(0, self.numOfThreads):
+                pList.append( Process(target=runThread, args=(self.pufList[pufListRanges[i][0] : (pufListRanges[i][1])], (pufListRanges[i][1] - pufListRanges[i][0]),self.numOfChallenges, self.numOfMultiplexer, self.MutatorBaseInstance, qList)))
+                pList[i].start()
+            
+            for j in xrange(0, self.numOfThreads):
+                #set block=True to block until we get a result
+                result.extend(qList.get(True))
+                
+        else:
+            runThread(self.pufList, self.numOfPufs, self.numOfChallenges, self.numOfMultiplexer, self.MutatorBaseInstance, qList)
+            result = qList.get()
         
         endTime = time.time()
         print  "Total calculation time: " + str(endTime - startTime)
