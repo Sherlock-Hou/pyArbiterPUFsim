@@ -1,4 +1,11 @@
+#!/cm/shared/apps/python/python3.4/bin/python3
 # -*- coding: utf-8 -*-
+
+#SBATCH --mail-user=wisiol@zedat.fu-berlin.de
+#SBATCH --job-name=arb-pf-test
+#SBATCH --mail-type=end
+#SBATCH --mem=2048
+#SBATCH --time=08:00:00
 
 import pufsim
 from math import exp
