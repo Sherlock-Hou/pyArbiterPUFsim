@@ -234,7 +234,7 @@ class pufEval(object):
         if isinstance(numOfMultiplexer, ( int )):
             self.numOfMultiplexer = numOfMultiplexer
         else:
-            raise RuntimeError('2 Argument (numOfMultiplexer) is not an Int/Long')
+            raise RuntimeError('2 Argument (numOfMultiplexer) is not an Int')
 
         if isinstance(RNDBaseInstance, RNDBase):
             self.RNDBaseInstance = RNDBaseInstance
@@ -244,7 +244,7 @@ class pufEval(object):
         if isinstance(numOfChallenges, ( int )):
             self.numOfChallenges = numOfChallenges
         else:
-            raise RuntimeError('4 Argument (numOfChallenges) is not an Int/Long')
+            raise RuntimeError('4 Argument (numOfChallenges) is not an Int')
 
         if isinstance(MutatorBaseInstance, MutatorBase):
             self.MutatorBaseInstance = MutatorBaseInstance
@@ -254,12 +254,12 @@ class pufEval(object):
         if isinstance( numOfPufs, ( int )):
             self.numOfPufs = numOfPufs
         else:
-            raise RuntimeError('6 Argument (numOfPufs) is not an Int/Long')
+            raise RuntimeError('6 Argument (numOfPufs) is not an Int')
         
         if isinstance(numOfThreads, ( int )):
             self.numOfThreads = numOfThreads
         else:
-            raise RuntimeError('7 Argument (numOfThreads) is not an Int/Long')
+            raise RuntimeError('7 Argument (numOfThreads) is not an Int')
         
         #creating puf instances
         self.pufList = []
