@@ -8,6 +8,31 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
+#base class for object that is evaluable by the pufEval class
+class EvalObjBase(object):
+    
+    __metaclass__ = ABCMeta
+
+    #getSize(self) returns needed challenge size) 
+    @abstractmethod
+    def getSize(self):
+        pass
+        
+    #challenge(self, bitList) returns puf response at level
+    @abstractmethod
+    def challenge(self, bitList):
+        pass
+        
+    #challenge(self, bitList) prints times
+    @abstractmethod
+    def challengePrint(self, bitList):
+        pass
+        
+    #challenge(self, bitList) returns single Bit
+    @abstractmethod
+    def challengeBit(self, bitList):
+        pass
+
 #single multiplexer
 class multiplexer(object):
     
@@ -25,7 +50,7 @@ class multiplexer(object):
         else:
             raise RuntimeError('Bit is not 0 or 1')
 #single puf
-class puf(object):
+class puf(EvalObjBase):
     
     #needs an instance of RNDBase to create single Multiplexer and overall
     #size (numer of Multiplexer) of the puf
@@ -59,7 +84,7 @@ class puf(object):
 
     #single challenge to puf
     #prints nice string ...
-    def challengeSingle(self, bitList):
+    def challengePrint(self, bitList):
         time_up, time_down = self.challenge(bitList)
         print('{' + ', '.join(map(str, bitList)) + '}\t' + str(time_up - time_down))
 
@@ -109,70 +134,164 @@ def genChallengeList(challengeSize, numOfChallenges):
     else :
         raise RuntimeError('numOfChallenges > 2 ^ challengeSize')
 
+class combinerFunc(EvalObjBase):
+    
+    __metaclass__ = ABCMeta
+    
+    #class instance variable, has to be overwritten by child
+    numOfPUFs = -1
+    
+    #needs an instance of RNDBase to create single Multiplexer and overall
+    #size (numer of Multiplexer) of the puf, number of PUFs for combinder func
+    # is determined by (overwritten) class instance variable
+    def __init__(self, gen, numOfMultip):
+        
+        if combinerFunc.numOfPUFs == -1 :
+            raise RuntimeError('Did not specify combinerFunc.numOfPUFs in child combinerFunc class')
+        
+        self.gen = gen
+        self.numOfMultip = numOfMultip
+        self.numOfPUFs = combinerFunc.numOfPUFs
+        self.pufList = []
+        
+        for i in range(0, self.numOfPUFs):
+            self.pufList.append(puf(self.gen, self.numOfMultip))
+
+    #returns number and size (number of multiplerxers) of PUFs 
+    def getSize(self):
+        return (self.numOfMultip, self.numOfPUFs)
+
+    #single challenge to all PUFs
+    #return: self.numOfPUFs times as tuple [(up, down), ...}
+    def challenge(self, bitList):
+        responseList = []
+        runner = 0
+        
+        bitListParted = self.partList(bitList)
+        
+        for puf in self.pufList:
+            responseList.append(puf.challengeBit(bitListParted[runner]))
+            runner += 1
+        return responseList
+
+    #single challenge to combiner
+    #prints nice string ...
+    def challengePrint(self, bitList):
+        runner = 0
+        print("Challenge:",end="")
+        print(bitList)
+        bitListParted = self.partList(bitList)
+        print("Challenge parted:")
+        print(bitListParted)
+        print()
+        print("times and corresponding result bits:")
+        for puf in self.pufList:
+            print(puf.challenge(bitListParted[runner]),end="")
+            print(puf.challengeBit(bitListParted[runner]))
+            runner += 1
+        print()
+        print("End result:",end="")
+        print(self.challengeBit(bitList))
+        
+
+    #single challenge to the combiner
+    #return: one bit result
+    def challengeBit(self, bitList):
+        return(self.combine(self.challenge(bitList)))
+        
+    @abstractmethod
+    def combine(self, responseList):
+        pass
+        
+    @abstractmethod
+    def partList(self, bitList):
+        pass
+        
+#Most simple combiner
+class simpleCombiner(combinerFunc):
+    
+    #Don't forget this when you build your own combiner!!!
+    combinerFunc.numOfPUFs = 4
+    
+    #overwirte the 2 abstract characteristic methodes of the combiner!
+    def combine(self, responseList):
+        return (responseList[0] * responseList[1]) ** (responseList[2] * responseList[3])
+        
+    def partList(self, bitList):
+        return [bitList[:], bitList[:], bitList[:], bitList[:]]
+
+
 class pufEval(object):
 
-    def __init__(self, numOfMultiplexer, RNDBaseInstance, numOfChallenges, MutatorBaseInstance, numOfPufs, numOfThreads):
-
+    def __init__(self, evalObject, numOfMultiplexer, RNDBaseInstance, numOfChallenges, MutatorBaseInstance, numOfPufs, numOfThreads=4):
+        
         #not nice, I know (refactor it ...)
+        if isinstance(evalObject(0,0), EvalObjBase):
+            self.evalObject = evalObject
+        else:
+            raise RuntimeError('1 Argument (evalObject) is not of the Typ EvalObjBase')
+        
         if isinstance(numOfMultiplexer, ( int, long )):
             self.numOfMultiplexer = numOfMultiplexer
         else:
-            raise RuntimeError('1 Argument (numOfMultiplexer) is not an Int/Long')
+            raise RuntimeError('2 Argument (numOfMultiplexer) is not an Int/Long')
 
         if isinstance(RNDBaseInstance, RNDBase):
             self.RNDBaseInstance = RNDBaseInstance
         else:
-            raise RuntimeError('2 Argument (RNDBaseInstance) is not of the Typ RNDBase')
+            raise RuntimeError('3 Argument (RNDBaseInstance) is not of the Typ RNDBase')
 
         if isinstance(numOfChallenges, ( int, long )):
             self.numOfChallenges = numOfChallenges
         else:
-            raise RuntimeError('3 Argument (numOfChallenges) is not an Int/Long')
+            raise RuntimeError('4 Argument (numOfChallenges) is not an Int/Long')
 
         if isinstance(MutatorBaseInstance, MutatorBase):
             self.MutatorBaseInstance = MutatorBaseInstance
         else:
-            raise RuntimeError('4 Argument (MutatorBaseInstance) is not of the Typ MutatorBase')
+            raise RuntimeError('5 Argument (MutatorBaseInstance) is not of the Typ MutatorBase')
         
         if isinstance( numOfPufs, ( int, long )):
             self.numOfPufs = numOfPufs
         else:
-            raise RuntimeError('5 Argument (numOfPufs) is not an Int/Long')
+            raise RuntimeError('6 Argument (numOfPufs) is not an Int/Long')
         
         if isinstance(numOfThreads, ( int, long )):
             self.numOfThreads = numOfThreads
         else:
-            raise RuntimeError('6 Argument (numOfThreads) is not an Int/Long')
+            raise RuntimeError('7 Argument (numOfThreads) is not an Int/Long')
         
         #creating puf instances
         self.pufList = []
-        for i in range(0, self.numOfPufs):
-            self.pufList.append(puf(self.RNDBaseInstance, self.numOfMultiplexer))
+        for i in range(0, self.numOfPufs): 
+            self.pufList.append(self.evalObject(self.RNDBaseInstance, self.numOfMultiplexer))
 
     def run(self):
-        #calculating list ranges for multi core processing
-        rest = self.numOfPufs % self.numOfThreads
-        pufListRanges = []
-        for j in range(0, self.numOfThreads):
-            pufListRanges.append([(j * ((self.numOfPufs - rest) / self.numOfThreads)), ((j + 1) * ((self.numOfPufs - rest) / self.numOfThreads))])
-        pufListRanges[self.numOfThreads - 1][1] = pufListRanges[self.numOfThreads - 1][1] + rest
-        
-        
-        qList = Queue()
-        pList = []
-        
-        startTime = time.time()
-        
-        for i in range(0, self.numOfThreads):
-            #self.run(self.pufList[pufListRanges[i][0] : (pufListRanges[i][1] -1)], (pufListRanges[i][1] - pufListRanges[i][0]),self.numOfChallenges, self.numOfMultiplexer, self.MutatorBaseInstance, qList)
-            pList.append( Process(target=runThread, args=(self.pufList[pufListRanges[i][0] : (pufListRanges[i][1])], (pufListRanges[i][1] - pufListRanges[i][0]),self.numOfChallenges, self.numOfMultiplexer, self.MutatorBaseInstance, qList)))
-            pList[i].start()
-
-        
         result = []
-        for j in range(0, self.numOfThreads):
-            #set block=True to block until we get a result
-            result.extend(qList.get(True))
+        qList = Queue()
+        startTime = time.time()
+        if (self.numOfThreads > 1):
+            #calculating list ranges for multi core processing
+            rest = self.numOfPufs % self.numOfThreads
+            pufListRanges = []
+            for j in range(0, self.numOfThreads):
+                pufListRanges.append([(j * ((self.numOfPufs - rest) / self.numOfThreads)), ((j + 1) * ((self.numOfPufs - rest) / self.numOfThreads))])
+            pufListRanges[self.numOfThreads - 1][1] = pufListRanges[self.numOfThreads - 1][1] + rest
+            
+            
+            pList = []
+            
+            for i in range(0, self.numOfThreads):
+                pList.append( Process(target=runThread, args=(self.pufList[pufListRanges[i][0] : (pufListRanges[i][1])], (pufListRanges[i][1] - pufListRanges[i][0]),self.numOfChallenges, self.numOfMultiplexer, self.MutatorBaseInstance, qList)))
+                pList[i].start()
+            
+            for j in range(0, self.numOfThreads):
+                #set block=True to block until we get a result
+                result.extend(qList.get(True))
+                
+        else:
+            runThread(self.pufList, self.numOfPufs, self.numOfChallenges, self.numOfMultiplexer, self.MutatorBaseInstance, qList)
+            result = qList.get()
         
         endTime = time.time()
         print("Total calculation time: " + str(endTime - startTime))
