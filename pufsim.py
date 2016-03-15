@@ -231,7 +231,7 @@ class pufEval(object):
         else:
             raise RuntimeError('1 Argument (evalObject) is not of the Typ EvalObjBase')
         
-        if isinstance(numOfMultiplexer, ( int, long )):
+        if isinstance(numOfMultiplexer, ( int )):
             self.numOfMultiplexer = numOfMultiplexer
         else:
             raise RuntimeError('2 Argument (numOfMultiplexer) is not an Int/Long')
@@ -241,7 +241,7 @@ class pufEval(object):
         else:
             raise RuntimeError('3 Argument (RNDBaseInstance) is not of the Typ RNDBase')
 
-        if isinstance(numOfChallenges, ( int, long )):
+        if isinstance(numOfChallenges, ( int )):
             self.numOfChallenges = numOfChallenges
         else:
             raise RuntimeError('4 Argument (numOfChallenges) is not an Int/Long')
@@ -251,12 +251,12 @@ class pufEval(object):
         else:
             raise RuntimeError('5 Argument (MutatorBaseInstance) is not of the Typ MutatorBase')
         
-        if isinstance( numOfPufs, ( int, long )):
+        if isinstance( numOfPufs, ( int )):
             self.numOfPufs = numOfPufs
         else:
             raise RuntimeError('6 Argument (numOfPufs) is not an Int/Long')
         
-        if isinstance(numOfThreads, ( int, long )):
+        if isinstance(numOfThreads, ( int )):
             self.numOfThreads = numOfThreads
         else:
             raise RuntimeError('7 Argument (numOfThreads) is not an Int/Long')
@@ -275,7 +275,10 @@ class pufEval(object):
             rest = self.numOfPufs % self.numOfThreads
             pufListRanges = []
             for j in range(0, self.numOfThreads):
-                pufListRanges.append([(j * ((self.numOfPufs - rest) / self.numOfThreads)), ((j + 1) * ((self.numOfPufs - rest) / self.numOfThreads))])
+                pufListRanges.append([
+                    (j       * (int((self.numOfPufs - rest) / self.numOfThreads))),
+                    ((j + 1) * (int((self.numOfPufs - rest) / self.numOfThreads)))
+                ])
             pufListRanges[self.numOfThreads - 1][1] = pufListRanges[self.numOfThreads - 1][1] + rest
             
             
