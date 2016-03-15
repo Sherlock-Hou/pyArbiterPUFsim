@@ -51,10 +51,6 @@ class ArbiterLR():
             sys.stdout.write("\nh: overflow for p=" + str(p) + "x=" + str(["%8f" % e for e in x]) + ", Θ=" + str(["%8f" % e for e in Θ]))
             raise e
 
-    # compute the new value for Θ[j]
-    def iterateΘj(self, Θ, j, α, m, tSet):
-        return Θ[j] - α/m * sum([ tSet[i][0][j] * ( self.h(tSet[i][0], Θ) - tSet[i][1] ) for i in range(k)])
-
     # compute input product
     def inputProd(self, c):
         return [
