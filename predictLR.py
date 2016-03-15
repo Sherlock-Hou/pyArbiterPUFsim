@@ -70,13 +70,18 @@ class ArbiterLR():
         # create pufsim with k multiplexer instances
         self.arbiterpf = pufsim.puf(pufsim.RNDNormal(), k)
 
-    def train(self):
+    def generateTrainingSet(self):
         # sample training set
         tChallenges = pufsim.genChallengeList(self.k, self.m + self.M)
         # add correct challenges
         tSet = [ ([1] + self.inputProd(c), self.arbiterpf.challengeBit(c)) for c in tChallenges[:self.m] ]
         # add wrong challenges
         tSet += [ ([1] + self.inputProd(c), 1-self.arbiterpf.challengeBit(c)) for c in tChallenges[self.m:] ]
+
+        return tSet
+
+    def train(self):
+        tSet = self.generateTrainingSet()
 
         converged = False
         i = 0
@@ -164,6 +169,24 @@ class ArbiterLR():
         self.train()
         return self.check()
 
+
+class ArbiterLRWithInterpolation(ArbiterLR):
+
+    def generateTrainingSet(self):
+        tSet = super(ArbiterLRWithInterpolation, self).generateTrainingSet()
+
+        additionalTSet = []
+        for crp in tSet:
+            CRP1 = (copy(crp[0]), crp[1])
+            CRP1[0][0] = CRP1[0][0] ^ 1
+
+            CRP2 = (copy(crp[0]), crp[1] ^ 1)
+            CRP2[0][self.k-1] = CRP2[0][self.k-1] ^ 1
+
+            additionalTSet += [CRP1, CRP2]
+
+        return tSet + additionalTSet
+
 result = zeros((10, 6, 10))
 for iIdx in range(0, 10):
     for mIdx in range(0, 10):
@@ -171,7 +194,7 @@ for iIdx in range(0, 10):
         for MIdx in range(6):
             try:
                 M = int(m * (MIdx/10.0))
-                lr = ArbiterLR(k=64, m=m, M=M, n=10000)
+                lr = ArbiterLRWithInterpolation(k=64, m=m, M=M, n=10000)
                 sys.stdout.write("%s,%s,%s,%s,%s," % (m,M,mIdx,MIdx,iIdx))
                 result[mIdx][MIdx][iIdx] = lr.run()
                 sys.stdout.write("%s\n" % result[mIdx][MIdx][iIdx])
