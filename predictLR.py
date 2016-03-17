@@ -189,11 +189,11 @@ class ArbiterLRWithInterpolation(ArbiterLR):
 
         return tSet + additionalTSet
 
-result = zeros((10, 6, 10))
-for iIdx in range(0, 10):
-    for mIdx in range(0, 10):
+result = zeros((20, 11, 1))
+for iIdx in range(0, 1):
+    for mIdx in range(0, 20):
         m = 100 * (mIdx+1)
-        for MIdx in range(6):
+        for MIdx in range(11):
             try:
                 M = int(m * (MIdx/10.0))
                 lr = ArbiterLRWithInterpolation(k=64, m=m, M=M, n=10000)
