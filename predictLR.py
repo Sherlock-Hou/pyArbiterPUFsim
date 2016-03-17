@@ -66,17 +66,19 @@ class ArbiterLR():
         self.n = min([2**k, n]) # check set size
         self.convergeDecimals = 8 # number of decimals expected to be equal after one iteration
         self.maxTrainingIteration = 100
+        self.pf = self.generatePF()
 
+    def generatePF(self):
         # create pufsim with k multiplexer instances
-        self.arbiterpf = pufsim.puf(pufsim.RNDNormal(), k)
+        return pufsim.puf(pufsim.RNDNormal(), self.k)
 
     def generateTrainingSet(self):
         # sample training set
         tChallenges = pufsim.genChallengeList(self.k, self.m + self.M)
         # add correct challenges
-        tSet = [ ([1] + self.inputProd(c), self.arbiterpf.challengeBit(c)) for c in tChallenges[:self.m] ]
+        tSet = [ ([1] + self.inputProd(c), self.pf.challengeBit(c)) for c in tChallenges[:self.m] ]
         # add wrong challenges
-        tSet += [ ([1] + self.inputProd(c), 1-self.arbiterpf.challengeBit(c)) for c in tChallenges[self.m:] ]
+        tSet += [ ([1] + self.inputProd(c), 1-self.pf.challengeBit(c)) for c in tChallenges[self.m:] ]
 
         return tSet
 
@@ -155,7 +157,7 @@ class ArbiterLR():
         good = 0
         bad = 0
         for c in cChallenges:
-            pfResponse = self.arbiterpf.challengeBit(c)
+            pfResponse = self.pf.challengeBit(c)
             lrResponse = 0 if self.sprod(self.Θ, [1] + self.inputProd(c)) < 0 else 1
             if pfResponse == lrResponse:
                 good += 1
