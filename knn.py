@@ -103,31 +103,31 @@ def trainiere2(knn, trainingsdatensatz, lernrate=0.1):
             for axon in neuron.axone:
                 axon.gewicht += lernrate*differenz*axon.neuron.wert
 
-# def updateGewich
+def trainiereBackprop(knn, trainingsdatensatz):
+    train = np.array(trainingsdatensatz)
 
+    knn.berechne(trainingsdatensatz)
 
-# def trainiereBackprop(knn, trainingsdatensatz):
-#     train = np.array(trainingsdatensatz)
-#
-#     knn.berechne(trainingsdatensatz)
-#
-#     for challenge, response in train:
-#
-#         # forward propagation
-#         l0 = X
-#         l1 = nonlin(np.dot(l0, syn0))
-#
-#         # how much did we miss?
-#         l1_error = y - l1
-#
-#         # multiply how much we missed by the
-#         # slope of the sigmoid at the values in l1
-#         l1_delta = l1_error * nonlin(l1, True)
-#
-#         # update weights
-#         syn0 += np.dot(l0.T, l1_delta)
+    for challenge, response in train:
 
+        ausgabeBerechnet = knn.berechne(challenge)
 
+        ausgabeError = response - ausgabeBerechnet
+        ausgabeDelta = ausgabeError * sigmoid()
+
+        # # forward propagation
+        # l0 = X
+        # l1 = nonlin(np.dot(l0, syn0))
+        #
+        # # how much did we miss?
+        # l1_error = y - l1
+        #
+        # # multiply how much we missed by the
+        # # slope of the sigmoid at the values in l1
+        # l1_delta = l1_error * nonlin(l1, True)
+        #
+        # # update weights
+        # syn0 += np.dot(l0.T, l1_delta)
 
 class KNNBuilder(object):
 
@@ -196,7 +196,6 @@ def kNNRatio(knn, dataSet):
         ratio += 1 if round(knn.ausgabeNeuronen[0].wert) == ausgabewerte[0] else 0
     return float(ratio) / len(dataSet)
 
-
 class SameMultiplexerTimes():
     def generateTimes(self):
         return (0.966967509537182, 0.1257048514440371, 0.2706525095800949, 0.3575951436163608)
@@ -238,26 +237,3 @@ if __name__ == '__main__':
     print "Nach dem Training: knn vs. response"
     print "% ", kNNRatio(knn, evaluationdatensatz)
     print knn.toString()
-
-    #create pufsim with 2 Multiplexer instances
-
-    #do a single challenge to the pufsim with a challenge as list
-    # pufsimu.challengeSingle([1,1,1,1,1,1,1])
-    # pufsimu.challengeSingle([1,1,1,1,1,1,0])
-    #
-    # pufsimu.challengeSingle([0,1,1,1,1,1,1])
-    #
-    # #worst case
-    # #print len(pufsim.genChallengeList(10,((2**10)-1)))
-    #
-    #
-    #
-    # mutatio = pufsim.MutatorLastBitSwitch()
-    #
-    # startTime = time.time()
-    #
-    # tryEval = pufsim.pufEval(16, rndgen, 2**8, mutatio, 1000, 4)
-    # tryEval.run()
-    #
-    # endTime = time.time()
-    # print  endTime - startTime
