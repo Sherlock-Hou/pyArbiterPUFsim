@@ -36,8 +36,9 @@ class KNN(object):
         return [neuron.wert for neuron in self.ausgabeNeuronen]
 
     def toString(self):
-        string = "EingabeWerte: "
-        string += str([str(eingabeNeuron.wert) for eingabeNeuron in knn.eingabeNeuronen]) + "\n"
+        string = ""
+        #string = "EingabeWerte: "
+        #string += str([str(eingabeNeuron.wert) for eingabeNeuron in knn.eingabeNeuronen]) + "\n"
         for layer, zwischenNeuronen in enumerate(self.zwischenNeuronen, start=0):
             string += str(layer) + ". Axone "
             for neuron in zwischenNeuronen:
@@ -223,7 +224,7 @@ if __name__ == '__main__':
     print "Evaluationsset: " + str(evaluationdatensatz)
 
     print "Vor dem Training: knn vs. response"
-    print "% ", kNNRatio(knn,trainingsdatensatz)
+    print "% ", kNNRatio(knn, evaluationdatensatz)
     print knn.toString()
 
     # Training SLP
@@ -232,11 +233,11 @@ if __name__ == '__main__':
 
     # Training Multilayer
     #for i in range(10000):
-    #    trainiereBackprop(knn, trainingsdatensatz
+    #    trainiereBackprop(knn, trainingsdatensatz)
 
-    print knn.toString()
     print "Nach dem Training: knn vs. response"
-    print "% ", kNNRatio(knn,evaluationdatensatz)
+    print "% ", kNNRatio(knn, evaluationdatensatz)
+    print knn.toString()
 
     #create pufsim with 2 Multiplexer instances
 
