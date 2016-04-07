@@ -16,7 +16,7 @@ def linKnackertester(bitzahl, genauigkeit, genauigkeit2, wieoft, CRParray, times
         linKnacker(bitzahl, genauigkeit, genauigkeit2, ArbPUFgoal, wieoft, int(CRParray[i]), timestamp)
 
 
-def linKnacker(bitzahl, genauigkeit, genauigkeit2, ArbPUFgoal, wieoft, CRP, timestamp, challenges=None, bin_resp=None):
+def linKnacker(bitzahl, genauigkeit, genauigkeit2, ArbPUFgoal, wieoft, CRP, timestamp, challenges=None, bin_r=None):
     res = 0.
     sucess = 0
     oft = 0
@@ -35,7 +35,7 @@ def linKnacker(bitzahl, genauigkeit, genauigkeit2, ArbPUFgoal, wieoft, CRP, time
             # challenges are given
             features = ArbPUFgoal.calc_features(challenges)
 
-        if (bin_resp is None):
+        if (bin_r is None):
             # create responses
             bin_resp = ArbPUFgoal.bin_response(features)
 
@@ -102,4 +102,6 @@ def linKnacker(bitzahl, genauigkeit, genauigkeit2, ArbPUFgoal, wieoft, CRP, time
 
 if __name__ == '__main__':
     # bitzahl, genauigkeit, genauigkeit2, wieoft, CRParray, timestamp
-    linKnackertester(64, 0.05, 0.01, 4, array([10000]), 'Test')
+    linKnackertester(64, 0.05, 0.01, 3, array([1000]), 'Test')
+    ArbPUFgoal = linArbPUF(64)
+    #linKnacker(64, 0.05, 0.01, ArbPUFgoal, 2, 600, 'Test')
