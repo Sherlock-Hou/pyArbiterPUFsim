@@ -38,6 +38,8 @@ def linKnacker(bitzahl, genauigkeit, genauigkeit2, ArbPUFgoal, wieoft, CRP, time
         if (bin_r is None):
             # create responses
             bin_resp = ArbPUFgoal.bin_response(features)
+        else:
+            bin_resp = bin_r
 
         set = TrainData(features, bin_resp)
 
