@@ -15,8 +15,8 @@ def bentKnackertester(bitzahl, num_pufs, genauigkeit, genauigkeit2, wieoft, CRPa
         bentKnacker(bitzahl, num_pufs, genauigkeit, genauigkeit2, BentPUFgoal, wieoft, int(CRParray[i]), timestamp)
 
 
-def bentKnacker(bitzahl, num_pufs, genauigkeit, genauigkeit2, BentPUFgoal, wieoft, CRP, timestamp):
-
+def bentKnacker(bitzahl, num_pufs, genauigkeit, genauigkeit2, BentPUFgoal, wieoft, CRP, timestamp, challenges=None, bin_resp=None):
+    res = 0.
     sucess = 0
     oft = 0
     mc_rate = MCError()
@@ -26,8 +26,19 @@ def bentKnacker(bitzahl, num_pufs, genauigkeit, genauigkeit2, BentPUFgoal, wieof
     while sucess < wieoft:
 
         erf = LRError()
-        features = BentPUFgoal.calc_features(BentPUFgoal.generate_challenge(CRP))
-        set = TrainData(features, BentPUFgoal.bin_response(features))
+
+        if (challenges is None):
+            # create challenges
+            features = BentPUFgoal.calc_features(BentPUFgoal.generate_challenge(CRP))
+        else:
+            # challenges are given
+            features = BentPUFgoal.calc_features(challenges)
+
+        if (bin_resp is None):
+            # create response
+            bin_resp = BentPUFgoal.bin_response(features)
+
+        set = TrainData(features, bin_resp)
 
         testfeatures = BentPUFgoal.calc_features(BentPUFgoal.generate_challenge(10000))
         testtargets = BentPUFgoal.bin_response(testfeatures)
@@ -61,6 +72,7 @@ def bentKnacker(bitzahl, num_pufs, genauigkeit, genauigkeit2, BentPUFgoal, wieof
             #trials.close()
 
         performanceTest = mc_rate.calc(testtargets, model.response(testfeatures)) / testtargets.shape[0]
+        res = performanceTest
         print 'MCrate: (test)', performanceTest, 'time since start:', start - time.time()
 
         f = open(timestamp + 'mctest_' + repr(bitzahl) + '_' + repr(num_pufs) + '_' + repr(CRP) + '.dat', 'a')
@@ -85,6 +97,7 @@ def bentKnacker(bitzahl, num_pufs, genauigkeit, genauigkeit2, BentPUFgoal, wieof
 
     #print 'meanValues','MCrate:', mean(mcrate), 'CRPs:', mean(crps), 'time[s]:', mean(zeit)
     print 'finished'
+    return res
 
 if __name__ == '__main__':
     # bitzahl, numpufs, genauigkeit, genauigkeit2, wieoft, CRP Anzahl, timestamp

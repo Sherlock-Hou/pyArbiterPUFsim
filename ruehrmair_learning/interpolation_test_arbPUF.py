@@ -110,7 +110,7 @@ def flip_two_bits_learning(numbit=64, num_challenges=1000, PUF=None):
 
     interpolated_bin_resp = flip_two_bits_responses(interpolated_challenges, num_challenges, ArbPUF, True)
 
-    result_normal = linear.linKnacker(numbit, 0.05, 0.01, ArbPUF, 1, num_challenges, 'Test', challenges)
+    result_normal = linear.linKnacker(numbit, 0.05, 0.01, ArbPUF, 2, num_challenges, 'Test', challenges)
     result_interpol = linear.linKnacker(numbit, 0.05, 0.01, ArbPUF, 1, num_challenges * 2, 'Test', interpolated_challenges, interpolated_bin_resp)
 
     print "Error rate normal" , result_normal
@@ -127,7 +127,7 @@ if __name__ == '__main__':
     how_many = 10
     # step between number of challenges
     steps = 50
-    max_num_of_challenges = 700
+    max_num_of_challenges = 200
     numbits = 64
 
     for num_cha in range(50, max_num_of_challenges, steps):
