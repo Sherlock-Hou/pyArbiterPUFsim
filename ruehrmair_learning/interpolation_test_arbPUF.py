@@ -18,7 +18,7 @@ def plot_results(num_challenges, error_rate_normal, error_rate_interpol, title):
     plt.ylabel("Error rate")
     plt.title(title)
 
-    plt.legend([red_patch, blue_patch], ['Normal Challenges', 'Last Two Bits Flipped'])
+    plt.legend([red_patch, blue_patch], ['Normal Challenges', 'Last Bit Flipped'])
 
     plt.show()
 
@@ -65,7 +65,7 @@ def flip_last_bit_learning(numbit = 64, num_challenges=1000, PUF=None):
 
     # learn with normal set and with interpolated set
     result_normal = linear.linKnacker(numbit, 0.05, 0.01, ArbPUF, 1, num_challenges, 'Test', challenges)
-    result_interpol = linear.linKnacker(numbit, 0.05, 0.01, ArbPUF, 1, num_challenges, 'Test', interpolated_challenges, interpolated_bin_resp)
+    result_interpol = linear.linKnacker(numbit, 0.05, 0.01, ArbPUF, 1, num_challenges * 2, 'Test', interpolated_challenges, interpolated_bin_resp)
 
     print "Error rate normal" , result_normal
     print "Error rate interpol" , result_interpol
@@ -135,11 +135,11 @@ if __name__ == '__main__':
         rate_norm = 0.
         rate_inter = 0.
         for i in range(0,how_many):
-            (a, b) = flip_two_bits_learning(numbits, num_cha)
+            (a, b) = flip_last_bit_learning(numbits, num_cha)
             rate_norm = rate_norm + a
             rate_inter = rate_inter + b
 
         error_rate_normal.append(rate_norm / how_many)
         error_rate_interpol.append(rate_inter / how_many)
 
-    plot_results(num_challenges, error_rate_normal, error_rate_interpol, "Error rate 64Bit ArbPUF\nDouble CRPs and Flip Last Two Bits")
+    plot_results(num_challenges, error_rate_normal, error_rate_interpol, "Error rate 64Bit ArbPUF\nDouble CRPs and Flip Last Bits")
