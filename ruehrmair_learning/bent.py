@@ -73,6 +73,7 @@ def bentKnacker(bitzahl, num_pufs, genauigkeit, genauigkeit2, BentPUFgoal, wieof
 
         performanceTest = mc_rate.calc(testtargets, model.response(testfeatures)) / testtargets.shape[0]
         res = performanceTest
+        res_time = start - time.time()
         print 'MCrate: (test)', performanceTest, 'time since start:', start - time.time()
 
         f = open(timestamp + 'mctest_' + repr(bitzahl) + '_' + repr(num_pufs) + '_' + repr(CRP) + '.dat', 'a')
@@ -97,7 +98,7 @@ def bentKnacker(bitzahl, num_pufs, genauigkeit, genauigkeit2, BentPUFgoal, wieof
 
     #print 'meanValues','MCrate:', mean(mcrate), 'CRPs:', mean(crps), 'time[s]:', mean(zeit)
     print 'finished'
-    return res
+    return res, res_time
 
 if __name__ == '__main__':
     # bitzahl, numpufs, genauigkeit, genauigkeit2, wieoft, CRP Anzahl, timestamp
