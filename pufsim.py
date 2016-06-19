@@ -75,7 +75,7 @@ class puf(EvalObjBase):
         runner = 0
 
         if len(bitList) != self.numOfMultip:
-            raise RuntimeError('Challenge has the wrong length')
+            raise RuntimeError('Challenge expected to have length ' + str(self.numOfMultip) + ' but was ' + str(len(bitList)))
 
         for plex in self.multiplexerList:
             time_up, time_down = plex.challenge(bitList[runner], time_up, time_down)
@@ -215,11 +215,23 @@ class simpleCombiner(combinerFunc):
     
     #overwirte the 2 abstract characteristic methodes of the combiner!
     def combine(self, responseList):
-        return (responseList[0] * responseList[1]) ** (responseList[2] * responseList[3])
+        return (responseList[0] * responseList[1]) ^ (responseList[2] * responseList[3])
         
     def partList(self, bitList):
         return [bitList[:], bitList[:], bitList[:], bitList[:]]
 
+#xor combiner
+class xorCombiner(combinerFunc):
+
+    #Don't forget this when you build your own combiner!!!
+    combinerFunc.numOfPUFs = 4
+
+    #overwirte the 2 abstract characteristic methodes of the combiner!
+    def combine(self, responseList):
+        return responseList[0] ^ responseList[1] ^ responseList[2] ^ responseList[3]
+
+    def partList(self, bitList):
+        return [bitList[:], bitList[:], bitList[:], bitList[:]]
 
 class pufEval(object):
 

@@ -3,7 +3,7 @@
 import pufsim
 from math import exp
 from numpy import around, sign, zeros
-#from scipy.spatial import distance
+from scipy.spatial import distance
 import sys
 from copy import copy
 
@@ -69,14 +69,20 @@ class ArbiterLR():
         # sample training set
         tChallenges = pufsim.genChallengeList(self.k, self.m + self.M)
         # add correct challenges
-        tSet = [ ([1] + self.inputProd(c), self.pf.challengeBit(c)) for c in tChallenges[:self.m] ]
+        tSet = [ (self.modChallengeForTraining([1] + self.inputProd(c)), self.pf.challengeBit(c)) for c in tChallenges[:self.m] ]
         # add wrong challenges
-        tSet += [ ([1] + self.inputProd(c), 1-self.pf.challengeBit(c)) for c in tChallenges[self.m:] ]
+        tSet += [ (self.modChallengeForTraining([1] + self.inputProd(c)), 1-self.pf.challengeBit(c)) for c in tChallenges[self.m:] ]
 
         return tSet
 
-    def train(self):
+    def modChallengeForTraining(self, c):
+        return c
+
+    def train(self, tDim=None):
         tSet = self.generateTrainingSet()
+
+        if tDim is None:
+            tDim = self.k+1
 
         converged = False
         i = 0
@@ -88,15 +94,15 @@ class ArbiterLR():
         Δmax = 50
 
         # learned delay values
-        Θ = self.triGen([ 1 for x in range(self.k+1) ]) # note k+1
+        Θ = self.triGen([ 1 for x in range(tDim) ])
 
         # partial derivatives of error function
-        pE = self.triGen(default=[ 0 for x in range(self.k+1) ])
+        pE = self.triGen(default=[ 0 for x in range(tDim) ])
 
         # update values for Θ
-        Δ = self.triGen(default=[ 0 for x in range(self.k+1) ]) # note k+1
-        Δ.cur = [ 1 for x in range(self.k+1) ] # init for first iteration
-        ΔΘ = self.triGen(default=[ 0 for x in range(self.k+1) ]) # note k+1
+        Δ = self.triGen(default=[ 0 for x in range(tDim) ])
+        Δ.cur = [ 1 for x in range(tDim) ] # init for first iteration
+        ΔΘ = self.triGen(default=[ 0 for x in range(tDim) ])
 
         try:
             while (not converged and i < self.maxTrainingIteration):
@@ -104,7 +110,10 @@ class ArbiterLR():
                 i += 1
 
                 # compute new Θ (RPROP algorithm)
-                for j in range(self.k+1):
+                print()
+                for j in range(tDim):
+                    print("\rcomputing derivative: " + str(j) + "/" + str(tDim) + "                   ", end="", flush=True)
+
                     # compute pE.cur[j]
                     pE.cur[j] = 1/float(self.m+self.M) * sum([ tSet[i][0][j] * ( self.h(tSet[i][0], Θ.cur) - tSet[i][1] ) for i in range(self.m+self.M)])
 
@@ -123,7 +132,7 @@ class ArbiterLR():
                         ΔΘ.cur[j] = -sign(pE.cur[j]) * Δ.cur[j]
                         Θ.nxt[j] = Θ.cur[j] + ΔΘ.cur[j]
 
-                sys.stdout.write(" ")
+                print()
 
                 # iterate the triGens Δ, ΔΘ, Θ, pE
                 Δ.iterate()
@@ -133,8 +142,8 @@ class ArbiterLR():
 
                 # check for convergence
                 converged = (around(Θ.prev,decimals=self.convergeDecimals) == around(Θ.cur,decimals=self.convergeDecimals)).all()
-                #sys.stdout.write("Θ(" + str(i) + "): " + str(["%8f" % e for e in Θ.cur]) + "; ")
-                #sys.stdout.write(str(i) + "th iteration -- current distance: " + str(round(distance.euclidean(Θ.prev, Θ.cur), convergeDecimals+2)) + "\n")
+                sys.stdout.write("Θ(" + str(i) + "): ") # + str(["%8f" % e for e in Θ.cur]) + "; ")
+                sys.stdout.write(str(i) + "th iteration -- current distance: " + str(round(distance.euclidean(Θ.prev, Θ.cur), self.convergeDecimals+2)) + "\n")
 
         except OverflowError as e:
             #print()
@@ -151,7 +160,7 @@ class ArbiterLR():
         bad = 0
         for c in cChallenges:
             pfResponse = self.pf.challengeBit(c)
-            lrResponse = 0 if self.sprod(self.Θ, [1] + self.inputProd(c)) < 0 else 1
+            lrResponse = 0 if self.sprod(self.Θ, self.modChallengeForTraining([1] + self.inputProd(c))) < 0 else 1
             if pfResponse == lrResponse:
                 good += 1
             else:
@@ -182,18 +191,61 @@ class ArbiterLRWithInterpolation(ArbiterLR):
 
         return tSet + additionalTSet
 
-result = zeros((20, 11, 1))
-for iIdx in range(0, 1):
-    for mIdx in range(0, 20):
-        m = 100 * (mIdx+1)
-        for MIdx in range(11):
-            try:
-                M = int(m * (MIdx/10.0))
-                lr = ArbiterLRWithInterpolation(k=64, m=m, M=M, n=10000)
-                sys.stdout.write("%s,%s,%s,%s,%s," % (m,M,mIdx,MIdx,iIdx))
-                result[mIdx][MIdx][iIdx] = lr.run()
-                sys.stdout.write("%s\n" % result[mIdx][MIdx][iIdx])
-            except Exception as e:
-                sys.stdout.write("%s\n" % str(e))
+class CombinedArbiterLR(ArbiterLR):
 
-            #sys.stderr.write(str(result) + "\n\n###################\n\n")
+    #def __init__(self, k, m, M, n):
+    #    super(ArbiterLRWithInterpolation, self).__init__(k, m, M, n)
+
+    def generatePF(self):
+        # create pufsim with k multiplexer instances
+        return pufsim.simpleCombiner(pufsim.RNDNormal(), self.k)
+
+    def tensor(self, m, n):
+        r = []
+        for i in range(len(m)):
+            for j in range(len(n)):
+                r.append(m[i]*n[j])
+        return r
+
+    def modChallengeForTraining(self, c):
+        c1 = copy(c)
+        c2 = copy(c)
+        c3 = copy(c)
+        c4 = copy(c)
+        t = self.tensor(self.tensor(self.tensor(c1, c2), c3), c4)
+        return t
+
+    def run(self):
+        self.train((self.k+1)**4)
+        return self.check()
+
+
+debug = True
+
+if debug:
+    k = 8
+    m = 15
+    M = 0
+    n = 10000
+    l = 4 # currently hardcoded -- this variable unused
+
+    lr = CombinedArbiterLR(k, m, M, n)
+    print("DEBUG! k=%s,m=%s,M=%s,n=%s,l=%s," % (k,m,M,n,l), flush=True)
+    print("\n\nRESULT " + str(lr.run()))
+
+else:
+    result = zeros((20, 11, 1))
+    for iIdx in range(0, 1):
+        for mIdx in range(0, 20):
+            m = 100 * (mIdx+1)
+            for MIdx in range(11):
+                try:
+                    M = int(m * (MIdx/10.0))
+                    lr = CombinedArbiterLR(k=64, m=m, M=M, n=10000)
+                    sys.stdout.write("%s,%s,%s,%s,%s," % (m,M,mIdx,MIdx,iIdx))
+                    result[mIdx][MIdx][iIdx] = lr.run()
+                    sys.stdout.write("%s\n" % result[mIdx][MIdx][iIdx])
+                except Exception as e:
+                    sys.stdout.write("%s\n" % str(e))
+
+                #sys.stderr.write(str(result) + "\n\n###################\n\n")
